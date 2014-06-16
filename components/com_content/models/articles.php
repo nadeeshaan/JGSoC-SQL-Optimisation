@@ -211,7 +211,7 @@ class ContentModelArticles extends JModelList
 			$query->select($this->getState('list.select', 'CASE WHEN badcats.id is not null THEN 0 ELSE a.state END AS state'));
 		}
 
-		$query->from('#__content AS a');
+		$query->from('#__content AS a USE INDEX FOR ORDER BY (idx_access_publish_up_created)');
 
 		// Join over the frontpage articles.
 		if ($this->context != 'com_content.featured')
@@ -221,7 +221,7 @@ class ContentModelArticles extends JModelList
 
 		// Join over the categories.
 		$query->select('c.title AS category_title, c.path AS category_route, c.access AS category_access, c.alias AS category_alias')
-			->join('LEFT', '#__categories AS c ON c.id = a.catid');
+			->join('LEFT', '#__categories AS c USE INDEX FOR ORDER BY (idx_access_lft) ON c.id = a.catid');
 
 		// Join over the users for the author and modified_by names.
 		$query->select("CASE WHEN a.created_by_alias > ' ' THEN a.created_by_alias ELSE ua.name END AS author")
@@ -448,8 +448,8 @@ class ContentModelArticles extends JModelList
 		// Filter by start and end dates.
 		if ((!$user->authorise('core.edit.state', 'com_content')) && (!$user->authorise('core.edit', 'com_content')))
 		{
-			$query	->where('(a.publish_up = '.$nullDate.' OR a.publish_up <= '.$nowDate.')')
-				->where('(a.publish_down = '.$nullDate.' OR a.publish_down >= '.$nowDate.')');
+			$query	->where('(a.publish_up = ' . $nullDate . ' OR a.publish_up <= ' . $nowDate . ')')
+				->where('(a.publish_down = ' . $nullDate . ' OR a.publish_down >= ' . $nowDate . ')');
 		}
 
 		// Filter by Date Range or Relative Date
