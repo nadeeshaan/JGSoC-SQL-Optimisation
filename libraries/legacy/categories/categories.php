@@ -138,6 +138,7 @@ class JCategories
 		if (!class_exists($classname))
 		{
 			$path = JPATH_SITE . '/components/' . $component . '/helpers/category.php';
+
 			if (is_file($path))
 			{
 				include_once $path;
@@ -207,6 +208,7 @@ class JCategories
 	protected function _load($id)
 	{
 		$db = JFactory::getDbo();
+		$db1 = JFactory::getDbo();
 		$user = JFactory::getUser();
 		$extension = $this->_extension;
 
@@ -214,6 +216,15 @@ class JCategories
 		$this->_checkedCategories[$id] = true;
 
 		$query = $db->getQuery(true);
+
+		// Query to retrieve the un published category ids
+		$badCatQuery = ' (SELECT cat.id as id FROM #__categories AS cat JOIN #__categories AS parent ' .
+			'ON cat.lft BETWEEN parent.lft AND parent.rgt WHERE parent.extension = ' . $db->quote($extension) .
+			' AND parent.published != 1 GROUP BY cat.id) ';
+
+		$db1->setQuery($badCatQuery);
+
+		$badCatIds = $db1->loadColumn();
 
 		// Right join with c for category
 		$query->select('c.id, c.asset_id, c.access, c.alias, c.checked_out, c.checked_out_time,
@@ -251,11 +262,11 @@ class JCategories
 				->where('s.id=' . (int) $id);
 		}
 
-		$subQuery = ' (SELECT cat.id as id FROM #__categories AS cat JOIN #__categories AS parent ' .
-			'ON cat.lft BETWEEN parent.lft AND parent.rgt WHERE parent.extension = ' . $db->quote($extension) .
-			' AND parent.published != 1 GROUP BY cat.id) ';
-		$query->join('LEFT', $subQuery . 'AS badcats ON badcats.id = c.id')
-			->where('badcats.id is null');
+		// If badCatIds is not empty filter the c.id values not in the array
+		if (!empty($badCatIds))
+		{
+			$query->where('c.id NOT IN (' . implode(',', $badCatIds) . ')');
+		}
 
 		// Note: i for item
 		if (isset($this->_options['countItems']) && $this->_options['countItems'] == 1)
@@ -664,6 +675,7 @@ class JCategoryNode extends JObject
 		if ($category)
 		{
 			$this->setProperties($category);
+
 			if ($constructor)
 			{
 				$this->_constructor = $constructor;
@@ -709,6 +721,7 @@ class JCategoryNode extends JObject
 				{
 					$this->_path = $parent->getPath();
 				}
+
 				$this->_path[] = $this->id . ':' . $this->alias;
 			}
 
@@ -769,6 +782,7 @@ class JCategoryNode extends JObject
 		if (!$this->_allChildrenloaded)
 		{
 			$temp = $this->_constructor->get($this->id, true);
+
 			if ($temp)
 			{
 				$this->_children = $temp->getChildren();
@@ -781,11 +795,13 @@ class JCategoryNode extends JObject
 		if ($recursive)
 		{
 			$items = array();
+
 			foreach ($this->_children as $child)
 			{
 				$items[] = $child;
 				$items = array_merge($items, $child->getChildren(true));
 			}
+
 			return $items;
 		}
 
@@ -960,6 +976,7 @@ class JCategoryNode extends JObject
 	public function setAllLoaded()
 	{
 		$this->_allChildrenloaded = true;
+
 		foreach ($this->_children as $child)
 		{
 			$child->setAllLoaded();
