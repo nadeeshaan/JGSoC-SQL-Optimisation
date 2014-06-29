@@ -20,6 +20,12 @@ defined('JPATH_PLATFORM') or die;
 class JSessionStorageDatabase extends JSessionStorage
 {
 	/**
+	 *Prepared statement variable to keep the statement query
+	 * without creating it again and again
+	 */
+	public static $updateStatement = null;
+
+	/**
 	 * Read the data for a particular session identifier from the SessionHandler backend.
 	 *
 	 * @param   string  $id  The session identifier.
@@ -28,6 +34,7 @@ class JSessionStorageDatabase extends JSessionStorage
 	 *
 	 * @since   11.1
 	 */
+
 	public function read($id)
 	{
 		// Get the database connection object and verify its connected.
@@ -38,8 +45,8 @@ class JSessionStorageDatabase extends JSessionStorage
 			// Get the session data from the database table.
 			$query = $db->getQuery(true)
 				->select($db->quoteName('data'))
-			->from($db->quoteName('#__session'))
-			->where($db->quoteName('session_id') . ' = ' . $db->quote($id));
+				->from($db->quoteName('#__session'))
+				->where($db->quoteName('session_id') . ' = ' . $db->quote($id));
 
 			$db->setQuery($query);
 
@@ -67,32 +74,27 @@ class JSessionStorageDatabase extends JSessionStorage
 	 */
 	public function write($id, $data)
 	{
-		// Get the database connection object and verify its connected.
-		$db = JFactory::getDbo();
-
 		$data = str_replace(chr(0) . '*' . chr(0), '\0\0\0', $data);
 
-		try
+		if (!self::$updateStatement)
 		{
-			$query = $db->getQuery(true)
-				->update($db->quoteName('#__session'))
-				->set($db->quoteName('data') . ' = ' . $db->quote($data))
-				->set($db->quoteName('time') . ' = ' . $db->quote((int) time()))
-				->where($db->quoteName('session_id') . ' = ' . $db->quote($id));
+			$conf = JFactory::getConfig();
+			$dbtype = $conf->get('dbtype');
+			$dbhost = $conf->get('host');
+			$dbname = $conf->get('db');
+			$dbuser = $conf->get('user');
+			$dbpass = $conf->get('password');
+			$query = 'update ltzvy_session set data=?,time=? where session_id=?';
 
-			// Try to update the session data in the database table.
-			$db->setQuery($query);
-			if (!$db->execute())
-			{
-				return false;
-			}
-			/* Since $db->execute did not throw an exception, so the query was successful.
-			Either the data changed, or the data was identical.
-			In either case we are done.
-			*/
+			$conn = new PDO("$dbtype:host=$dbhost;dbname=$dbname", $dbuser, $dbpass);
+			self::$updateStatement = $conn->prepare($query);
+		}
+
+		if (self::$updateStatement->execute(array($data, (int) time(), $id)))
+		{
 			return true;
 		}
-		catch (Exception $e)
+		else
 		{
 			return false;
 		}
