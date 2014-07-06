@@ -175,7 +175,7 @@ class ContentModelArticles extends JModelList
 
 		// Create a new query object.
 		$db = $this->getDbo();
-		$db1 = $this->getDbo();
+		$dbBadCat = $this->getDbo();
 		$query = $db->getQuery(true);
 
 		// Query to retrieve the un published categories
@@ -195,8 +195,8 @@ class ContentModelArticles extends JModelList
 			$badCatQuery .= ' AND parent.published != 1 GROUP BY cat.id ';
 		}
 
-		$db1->setQuery($badCatQuery);
-		$badCatIds = $db1->loadColumn();
+		$dbBadCat->setQuery($badCatQuery);
+		$badCatIds = $dbBadCat->loadColumn();
 
 		// Select the required fields from the table.
 		$query->select(
