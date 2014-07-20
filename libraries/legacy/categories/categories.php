@@ -208,7 +208,6 @@ class JCategories
 	protected function _load($id)
 	{
 		$db = JFactory::getDbo();
-		$db1 = JFactory::getDbo();
 		$user = JFactory::getUser();
 		$extension = $this->_extension;
 
@@ -218,16 +217,16 @@ class JCategories
 		$query = $db->getQuery(true);
 
 		// Query to retrieve the un published category ids
-		$badCatQuery = ' (SELECT cat.id as id FROM #__categories AS cat JOIN #__categories AS parent ' .
+		$unpublishedCatQuery = ' SELECT DISTINCT cat.id as id FROM #__categories AS cat JOIN #__categories AS parent ' .
 			'ON cat.lft BETWEEN parent.lft AND parent.rgt WHERE parent.extension = ' . $db->quote($extension) .
-			' AND parent.published != 1 GROUP BY cat.id) ';
+			' AND parent.published != 1 ';
 
-		$db1->setQuery($badCatQuery);
+		$db->setQuery($unpublishedCatQuery);
 
-		$badCatIds = $db1->loadColumn();
+		$unpublishedCatIds = $db->loadColumn();
 
 		// Right join with c for category
-		$query->select('c.id, c.asset_id, c.access, c.alias, c.checked_out, c.checked_out_time,
+		$query->select('DISTINCT c.id, c.asset_id, c.access, c.alias, c.checked_out, c.checked_out_time,
 			c.created_time, c.created_user_id, c.description, c.extension, c.hits, c.language, c.level,
 			c.lft, c.metadata, c.metadesc, c.metakey, c.modified_time, c.note, c.params, c.parent_id,
 			c.path, c.published, c.rgt, c.title, c.modified_user_id, c.version');
@@ -262,10 +261,10 @@ class JCategories
 				->where('s.id=' . (int) $id);
 		}
 
-		// If badCatIds is not empty filter the c.id values not in the array
-		if (!empty($badCatIds))
+		// If unpublishedCatIds is not empty filter the c.id values not in the array
+		if (!empty($unpublishedCatIds))
 		{
-			$query->where('c.id NOT IN (' . implode(',', $badCatIds) . ')');
+			$query->where('c.id NOT IN (' . implode(',', $unpublishedCatIds) . ')');
 		}
 
 		// Note: i for item
@@ -285,14 +284,6 @@ class JCategories
 
 			$query->select('COUNT(i.' . $db->quoteName($this->_key) . ') AS numitems');
 		}
-
-		// Group by
-		$query->group(
-			'c.id, c.asset_id, c.access, c.alias, c.checked_out, c.checked_out_time,
-			 c.created_time, c.created_user_id, c.description, c.extension, c.hits, c.language, c.level,
-			 c.lft, c.metadata, c.metadesc, c.metakey, c.modified_time, c.note, c.params, c.parent_id,
-			 c.path, c.published, c.rgt, c.title, c.modified_user_id, c.version'
-		);
 
 		// Get the results
 		$db->setQuery($query);
