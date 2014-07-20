@@ -1570,7 +1570,7 @@ CREATE TABLE IF NOT EXISTS `#__session` (
   `data` mediumtext,
   `userid` int(11) DEFAULT 0,
   `username` varchar(150) DEFAULT '',
-  PRIMARY KEY (`session_id`),
+  PRIMARY KEY (`session_id`(32)),
   KEY `userid` (`userid`),
   KEY `time` (`time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
