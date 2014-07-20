@@ -175,28 +175,27 @@ class ContentModelArticles extends JModelList
 
 		// Create a new query object.
 		$db = $this->getDbo();
-		$dbBadCat = $this->getDbo();
 		$query = $db->getQuery(true);
 
 		// Query to retrieve the un published categories
-		$badCatQuery = 'SELECT cat.id as id FROM #__categories AS cat JOIN #__categories AS parent ' .
+		$unpublishedCatQuery = 'SELECT DISTINCT cat.id as id FROM #__categories AS cat JOIN #__categories AS parent ' .
 			'ON cat.lft BETWEEN parent.lft AND parent.rgt WHERE parent.extension = ' . $db->quote('com_content');
 
 		if ($this->getState('filter.published') == 2)
 		{
 			// Find any up-path categories that are archived
 			// If any up-path categories are archived, include all children in archived layout
-			$badCatQuery .= ' AND parent.published = 2 GROUP BY cat.id ';
+			$unpublishedCatQuery .= ' AND parent.published = 2';
 		}
 		else
 		{
 			// Find any up-path categories that are not published
 			// If all categories are published, cat.id for the above query will be null, and we just use the article state
-			$badCatQuery .= ' AND parent.published != 1 GROUP BY cat.id ';
+			$unpublishedCatQuery .= ' AND parent.published != 1';
 		}
 
-		$dbBadCat->setQuery($badCatQuery);
-		$badCatIds = $dbBadCat->loadColumn();
+		$db->setQuery($unpublishedCatQuery);
+		$unpublishedCatIds = $db->loadColumn();
 
 		// Select the required fields from the table.
 		$query->select(
@@ -218,31 +217,31 @@ class ContentModelArticles extends JModelList
 		// Process an Archived Article layout
 		if ($this->getState('filter.published') == 2)
 		{
-			// If badcats is not null, this means that the article is inside an archived category
+			// If unpublishedCatIds is not null, this means that the article is inside an archived category
 			// In this case, the state is set to 2 to indicate Archived (even if the article state is Published)
-			if (empty($badCatIds))
+			if (empty($unpublishedCatIds))
 			{
 				$query->select($this->getState('list.select', 'a.state AS state'));
 			}
 			else
 			{
-				$query->select($this->getState('list.select', 'CASE WHEN c.id NOT IN ' . implode(',', $badCatIds) . ' THEN a.state ELSE 2 END AS state'));
+				$query->select($this->getState('list.select', 'CASE WHEN c.id NOT IN ' . implode(',', $unpublishedCatIds) . ' THEN a.state ELSE 2 END AS state'));
 			}
 		}
 		else
 		{
 			/*
 			Process non-archived layout
-			If badcats is not null, this means that the article is inside an unpublished category
+			If unpublishedCatIds is not null, this means that the article is inside an unpublished category
 			In this case, the state is set to 0 to indicate Unpublished (even if the article state is Published)
 			*/
-			if (empty($badCatIds))
+			if (empty($unpublishedCatIds))
 			{
 				$query->select($this->getState('list.select', 'a.state AS state'));
 			}
 			else
 			{
-				$query->select($this->getState('list.select', 'CASE WHEN c.id IN ' . implode(',', $badCatIds) . ' THEN 0 ELSE a.state END AS state'));
+				$query->select($this->getState('list.select', 'CASE WHEN c.id IN ' . implode(',', $unpublishedCatIds) . ' THEN 0 ELSE a.state END AS state'));
 			}
 		}
 
@@ -273,37 +272,37 @@ class ContentModelArticles extends JModelList
 		$query->select('ROUND(v.rating_sum / v.rating_count, 0) AS rating, v.rating_count as rating_count')
 			->join('LEFT', '#__content_rating AS v ON a.id = v.content_id');
 
-		if (empty($badCatIds))
+		if (empty($unpublishedCatIds))
 		{
 			$query->select('c.published,c.published AS parents_published');
 		}
 		else
 		{
-			$query->select('c.published, CASE WHEN c.id NOT IN ' . implode(',', $badCatIds) . ' THEN c.published ELSE 0 END AS parents_published');
+			$query->select('c.published, CASE WHEN c.id NOT IN ' . implode(',', $unpublishedCatIds) . ' THEN c.published ELSE 0 END AS parents_published');
 		}
 
 		if ($this->getState('filter.published') == 2)
 		{
 			// Set effective state to archived if up-path category is archived
-			if (empty($badCatIds))
+			if (empty($unpublishedCatIds))
 			{
 				$publishedWhere = 'a.state';
 			}
 			else
 			{
-				$publishedWhere = 'CASE WHEN c.id NOT IN ' . implode(',', $badCatIds) . ' THEN a.state ELSE 2 END';
+				$publishedWhere = 'CASE WHEN c.id NOT IN ' . implode(',', $unpublishedCatIds) . ' THEN a.state ELSE 2 END';
 			}
 		}
 		else
 		{
 			// Select state to unpublished if up-path category is unpublished
-			if (empty($badCatIds))
+			if (empty($unpublishedCatIds))
 			{
 				$publishedWhere = 'a.state';
 			}
 			else
 			{
-				$publishedWhere = 'CASE WHEN c.id NOT IN ' . implode(',', $badCatIds) . ' THEN a.state ELSE 0 END';
+				$publishedWhere = 'CASE WHEN c.id NOT IN ' . implode(',', $unpublishedCatIds) . ' THEN a.state ELSE 0 END';
 			}
 		}
 
