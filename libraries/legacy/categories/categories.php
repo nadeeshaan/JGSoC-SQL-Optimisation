@@ -226,10 +226,7 @@ class JCategories
 		$unpublishedCatIds = $db->loadColumn();
 
 		// Right join with c for category
-		$query->select('DISTINCT c.id, c.asset_id, c.access, c.alias, c.checked_out, c.checked_out_time,
-			c.created_time, c.created_user_id, c.description, c.extension, c.hits, c.language, c.level,
-			c.lft, c.metadata, c.metadesc, c.metakey, c.modified_time, c.note, c.params, c.parent_id,
-			c.path, c.published, c.rgt, c.title, c.modified_user_id, c.version');
+		$query->select('DISTINCT c.id,c.alias,c.language,c.parent_id,c.path');
 		$case_when = ' CASE WHEN ';
 		$case_when .= $query->charLength('c.alias', '!=', '0');
 		$case_when .= ' THEN ';
