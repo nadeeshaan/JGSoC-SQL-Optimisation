@@ -121,9 +121,9 @@ abstract class NewsfeedsHelperRoute
 		{
 			$db    = JFactory::getDbo();
 			$query = $db->getQuery(true)
-				->select('a.sef AS sef')
-				->select('a.lang_code AS lang_code')
-				->from('#__languages AS a');
+				->select('sef')
+				->select('lang_code')
+				->from('#__languages');
 
 			$db->setQuery($query);
 			$langs = $db->loadObjectList();

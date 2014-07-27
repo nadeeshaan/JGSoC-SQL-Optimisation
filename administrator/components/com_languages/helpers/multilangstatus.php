@@ -29,6 +29,7 @@ abstract class MultilangstatusHelper
 			->where('published = 1')
 			->where('client_id = 0');
 		$db->setQuery($query);
+
 		return $db->loadResult();
 	}
 
@@ -43,6 +44,7 @@ abstract class MultilangstatusHelper
 			->where('published = 1')
 			->where('client_id = 0');
 		$db->setQuery($query);
+
 		return $db->loadResult();
 	}
 
@@ -51,24 +53,26 @@ abstract class MultilangstatusHelper
 		// Check for published Content Languages
 		$db = JFactory::getDbo();
 		$query = $db->getQuery(true)
-			->select('a.lang_code AS lang_code')
-			->select('a.published AS published')
-			->from('#__languages AS a');
+			->select('lang_code')
+			->select('published')
+			->from('#__languages');
 		$db->setQuery($query);
+
 		return $db->loadObjectList();
 	}
 
 	public static function getSitelangs()
 	{
-		// check for published Site Languages
+		// Check for published Site Languages
 		$db = JFactory::getDbo();
 		$query = $db->getQuery(true)
-			->select('a.element AS element')
-			->from('#__extensions AS a')
-			->where('a.type = ' . $db->quote('language'))
-			->where('a.client_id = 0')
-			->where('a.enabled = 1');
+			->select('element')
+			->from('#__extensions')
+			->where('type = ' . $db->quote('language'))
+			->where('client_id = 0')
+			->where('enabled = 1');
 		$db->setQuery($query);
+
 		return $db->loadObjectList('element');
 	}
 
@@ -83,17 +87,35 @@ abstract class MultilangstatusHelper
 			->where('published = 1')
 			->where('client_id = 0');
 		$db->setQuery($query);
+
 		return $db->loadObjectList('language');
 	}
 
 	public static function getStatus()
 	{
-		//check for combined status
+		// Check for combined status
 		$db = JFactory::getDbo();
 		$query = $db->getQuery(true);
 
 		// Select all fields from the languages table.
-		$query->select('a.*', 'l.home')
+		$query->select(
+				array(
+					'a.lang_id',
+					'a.lang_code',
+					'a.title',
+					'a.title_native',
+					'a.sef',
+					'a.image',
+					'a.description',
+					'a.metakey',
+					'a.metadesc',
+					'a.sitename',
+					'a.published',
+					'a.access',
+					'a.ordering',
+					'l.home'
+				)
+			)
 			->select('a.published AS published')
 			->select('a.lang_code AS lang_code')
 			->from('#__languages AS a');
@@ -110,6 +132,7 @@ abstract class MultilangstatusHelper
 			->where('e.state = 0');
 
 		$db->setQuery($query);
+
 		return $db->loadObjectList();
 	}
 
@@ -128,6 +151,7 @@ abstract class MultilangstatusHelper
 			->having('(counted !=' . count(JLanguageHelper::getLanguages()) . ' OR all_languages=1)')
 			->having('(counted !=1 OR all_languages=0)');
 		$db->setQuery($query);
+
 		return $db->loadObjectList();
 	}
 }

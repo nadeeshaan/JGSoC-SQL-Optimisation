@@ -29,7 +29,24 @@ abstract class ModMenuHelper
 	{
 		$db		= JFactory::getDbo();
 		$query	= $db->getQuery(true)
-			->select('a.*, SUM(b.home) AS home')
+			->select(
+				array(
+					'lang_id',
+					'lang_code',
+					'title',
+					'title_native',
+					'sef',
+					'image',
+					'description',
+					'metakey',
+					'metadesc',
+					'sitename',
+					'published',
+					'access',
+					'ordering',
+					),
+				'SUM(b.home) AS home'
+			)
 			->from('#__menu_types AS a')
 			->join('LEFT', '#__menu AS b ON b.menutype = a.menutype AND b.home != 0')
 			->select('b.language')
