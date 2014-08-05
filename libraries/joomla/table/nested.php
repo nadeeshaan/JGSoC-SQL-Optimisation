@@ -151,6 +151,26 @@ class JTableNested extends JTable
 	}
 
 	/**
+	 * Method to get correlated sub query to get the paths of the nodes
+	 *
+	 * @param   string  $mapField  table field to map with the n.id Usually given as a.id
+	 *
+	 * @return JDatabaseQuery
+	 */
+	public function getCorrelatedPathQuery($mapField)
+	{
+		$query = $this->_db->getQuery(true)
+			->select('(group_concat(p.alias SEPARATOR "/")')
+			->from($this->_tbl . ' AS n, ' . $this->_tbl . ' AS p')
+			->where('n.lft BETWEEN p.lft AND p.rgt')
+			->where('n.id = ' . $mapField)
+			->where('p.alias <> "root"')
+			->order('p.lft' . ') AS path');
+
+		return $query;
+	}
+
+	/**
 	 * Method to get a node and all its child nodes.
 	 *
 	 * @param   integer  $pk          Primary key of the node for which to get the tree.
