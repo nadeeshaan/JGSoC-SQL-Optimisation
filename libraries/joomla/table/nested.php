@@ -160,12 +160,12 @@ class JTableNested extends JTable
 	public function getCorrelatedPathQuery($mapField)
 	{
 		$query = $this->_db->getQuery(true)
-			->select('(group_concat(p.alias SEPARATOR "/")')
+			->select('group_concat(p.alias SEPARATOR "/")')
 			->from($this->_tbl . ' AS n, ' . $this->_tbl . ' AS p')
 			->where('n.lft BETWEEN p.lft AND p.rgt')
 			->where('n.id = ' . $mapField)
 			->where('p.alias <> "root"')
-			->order('p.lft' . ') AS path');
+			->order('p.lft');
 
 		return $query;
 	}
