@@ -114,9 +114,12 @@ class JFormFieldTag extends JFormFieldList
 	{
 		$published = $this->element['published']? $this->element['published'] : array(0,1);
 
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_tags/tables');
+		$table = JTable::getInstance('Tag', 'TagsTable');
+
 		$db		= JFactory::getDbo();
 		$query	= $db->getQuery(true)
-			->select('a.id AS value, a.path, a.title AS text, a.level, a.published')
+			->select('a.id AS value,(' . $table->getCorrelatedPathQuery('a.id') . ')AS path, a.title AS text, a.level, a.published')
 			->from('#__tags AS a')
 			->join('LEFT', $db->quoteName('#__tags') . ' AS b ON a.lft > b.lft AND a.rgt < b.rgt');
 
