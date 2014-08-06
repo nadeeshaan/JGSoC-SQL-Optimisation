@@ -171,6 +171,28 @@ class JTableNested extends JTable
 	}
 
 	/**
+	 * Method to get correlated sub query to get the parent_id of the nodes
+	 *
+	 * @param   string  $lft  lft value field as an example a.lft
+	 *
+	 * @param   string  $rgt  rgt value field as an example a.rgt
+	 *
+	 * @return JDatabaseQuery
+	 */
+	public function getCorrelatedParentIdQuery($lft,$rgt)
+	{
+		$query = $this->_db->getQuery(true)
+			->select('id')
+			->from($this->_tbl)
+			->where('lft < ' . $lft)
+			->where('rgt > ' . $rgt)
+			->order('rgt - ' . $rgt . ' ASC')
+			->setLimit(1);
+
+		return $query;
+	}
+
+	/**
 	 * Method to get a node and all its child nodes.
 	 *
 	 * @param   integer  $pk          Primary key of the node for which to get the tree.
