@@ -193,6 +193,25 @@ class JTableNested extends JTable
 	}
 
 	/**
+	 * Method to get correlated sub query to get the level of the nodes
+	 *
+	 * @param   string  $mapField  table field to map with the p.id Usually given as a.id
+	 *
+	 * @return JDatabaseQuery
+	 */
+	public function getCorrelatedLevelQuery($mapField)
+	{
+		$query = $this->_db->getQuery(true)
+			->select('COUNT(n.id)')
+			->from($this->_tbl . ' AS n, ' . $this->_tbl . ' AS p')
+			->where('p.lft BETWEEN n.lft AND n.rgt')
+			->where('p.id = ' . $mapField)
+			->where('n.alias <> "root"');
+
+		return $query;
+	}
+
+	/**
 	 * Method to get a node and all its child nodes.
 	 *
 	 * @param   integer  $pk          Primary key of the node for which to get the tree.
