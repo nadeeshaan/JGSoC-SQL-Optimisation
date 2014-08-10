@@ -128,13 +128,27 @@ class TagsModelTags extends JModelList
 		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_tags/tables');
 		$tagsTable = JTable::getInstance('Tag', 'TagsTable');
 
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $tagsTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$pathField = '(' . $tagsTable->getCorrelatedPathQuery('a.id') . ') AS path';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'path')
+			{
+				$pathField = 'a.path';
+			}
+		}
+
 		// Select the required fields from the table.
 		$query->select(
 			$this->getState(
 				'list.select',
 				'a.id, a.title, a.alias, a.note, a.published, a.access' .
 					', a.checked_out, a.checked_out_time, a.created_user_id' .
-					', (' . $tagsTable->getCorrelatedPathQuery('a.id') . ')AS path, a.parent_id, a.level, a.lft, a.rgt' .
+					', ' . $pathField . ', a.parent_id, a.level, a.lft, a.rgt' .
 					', a.language'
 			)
 		);
