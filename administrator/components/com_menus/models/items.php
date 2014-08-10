@@ -189,6 +189,20 @@ class MenusModelItems extends JModelList
 		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_menus/tables');
 		$menuTable = JTable::getInstance('Menu', 'MenusTable');
 
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $menuTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$pathField = '(' . $menuTable->getCorrelatedPathQuery('a.id') . ') AS path';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'path')
+			{
+				$pathField = 'a.path';
+			}
+		}
+
 		// Select all fields from the table.
 		$query->select(
 			$this->getState(
@@ -198,7 +212,7 @@ class MenusModelItems extends JModelList
 						'a.title',
 						'a.alias',
 						'a.note',
-						'(' . $menuTable->getCorrelatedPathQuery('a.id') . ')AS path',
+						$pathField,
 						'a.link',
 						'a.type',
 						'a.parent_id',
