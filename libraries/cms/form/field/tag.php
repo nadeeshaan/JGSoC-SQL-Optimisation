@@ -118,8 +118,23 @@ class JFormFieldTag extends JFormFieldList
 		$table = JTable::getInstance('Tag', 'TagsTable');
 
 		$db		= JFactory::getDbo();
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $table->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$pathField = '(' . $table->getCorrelatedPathQuery('a.id') . ') AS path';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'path')
+			{
+				$pathField = 'a.path';
+			}
+		}
+
 		$query	= $db->getQuery(true)
-			->select('a.id AS value,(' . $table->getCorrelatedPathQuery('a.id') . ')AS path, a.title AS text, a.level, a.published')
+			->select('DISTINCT a.id AS value,' . $pathField . ', a.title AS text, a.level, a.published')
 			->from('#__tags AS a')
 			->join('LEFT', $db->quoteName('#__tags') . ' AS b ON a.lft > b.lft AND a.rgt < b.rgt');
 
@@ -151,8 +166,7 @@ class JFormFieldTag extends JFormFieldList
 			$query->where('a.published IN (' . implode(',', $published) . ')');
 		}
 
-		$query->group('a.id, a.title, a.level, a.lft, a.rgt, a.parent_id, a.published, path')
-			->order('a.lft ASC');
+		$query->order('a.lft ASC');
 
 		// Get the options.
 		$db->setQuery($query);
