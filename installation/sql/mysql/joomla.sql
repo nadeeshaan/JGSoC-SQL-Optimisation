@@ -1645,7 +1645,8 @@ CREATE TABLE IF NOT EXISTS `#__template_styles` (
   `params` text NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_template` (`template`),
-  KEY `idx_home` (`home`)
+  KEY `idx_home` (`home`),
+	KEY 'idx_client_id' ('client_id')
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=9;
 
 --
