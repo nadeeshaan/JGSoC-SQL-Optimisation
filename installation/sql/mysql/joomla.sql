@@ -1207,7 +1207,8 @@ CREATE TABLE IF NOT EXISTS `#__languages` (
   UNIQUE KEY `idx_image` (`image`),
   UNIQUE KEY `idx_langcode` (`lang_code`),
   KEY `idx_access` (`access`),
-  KEY `idx_ordering` (`ordering`)
+  KEY `idx_ordering` (`ordering`),
+	KEY 'idx_published_ordering' ('published','ordering')
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 --
