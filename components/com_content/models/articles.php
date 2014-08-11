@@ -173,6 +173,9 @@ class ContentModelArticles extends JModelList
 		// Get the current user for authorisation checks
 		$user	= JFactory::getUser();
 
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+		$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
 		// Create a new query object.
 		$db = $this->getDbo();
 		$query = $db->getQuery(true);
@@ -182,15 +185,15 @@ class ContentModelArticles extends JModelList
 			$this->getState(
 				'list.select',
 				'a.id, a.title, a.alias, a.introtext, a.fulltext, ' .
-					'a.checked_out, a.checked_out_time, ' .
-					'a.catid, a.created, a.created_by, a.created_by_alias, ' .
-					// Use created if modified is 0
-					'CASE WHEN a.modified = ' . $db->quote($db->getNullDate()) . ' THEN a.created ELSE a.modified END as modified, ' .
-					'a.modified_by, uam.name as modified_by_name,' .
-					// Use created if publish_up is 0
-					'CASE WHEN a.publish_up = ' . $db->quote($db->getNullDate()) . ' THEN a.created ELSE a.publish_up END as publish_up,' .
-					'a.publish_down, a.images, a.urls, a.attribs, a.metadata, a.metakey, a.metadesc, a.access, ' .
-					'a.hits, a.xreference, a.featured,' . ' ' . $query->length('a.fulltext') . ' AS readmore'
+				'a.checked_out, a.checked_out_time, ' .
+				'a.catid, a.created, a.created_by, a.created_by_alias, ' .
+				// Use created if modified is 0
+				'CASE WHEN a.modified = ' . $db->quote($db->getNullDate()) . ' THEN a.created ELSE a.modified END as modified, ' .
+				'a.modified_by, uam.name as modified_by_name,' .
+				// Use created if publish_up is 0
+				'CASE WHEN a.publish_up = ' . $db->quote($db->getNullDate()) . ' THEN a.created ELSE a.publish_up END as publish_up,' .
+				'a.publish_down, a.images, a.urls, a.attribs, a.metadata, a.metakey, a.metadesc, a.access, ' .
+				'a.hits, a.xreference, a.featured,' . ' ' . $query->length('a.fulltext') . ' AS readmore'
 			)
 		);
 
@@ -220,7 +223,8 @@ class ContentModelArticles extends JModelList
 		}
 
 		// Join over the categories.
-		$query->select('c.title AS category_title, c.path AS category_route, c.access AS category_access, c.alias AS category_alias')
+		$query->select('c.title AS category_title, (' . $catTable->getCorrelatedPathQuery('c.id') . ') AS category_route,' .
+			' c.access AS category_access, c.alias AS category_alias')
 			->join('LEFT', '#__categories AS c ON c.id = a.catid');
 
 		// Join over the users for the author and modified_by names.
@@ -231,7 +235,8 @@ class ContentModelArticles extends JModelList
 			->join('LEFT', '#__users AS uam ON uam.id = a.modified_by');
 
 		// Join over the categories to get parent category titles
-		$query->select('parent.title as parent_title, parent.id as parent_id, parent.path as parent_route, parent.alias as parent_alias')
+		$query->select('parent.title as parent_title, parent.id as parent_id,' .
+			' (' . $catTable->getCorrelatedPathQuery('c.id') . ') as parent_route, parent.alias as parent_alias')
 			->join('LEFT', '#__categories as parent ON parent.id = c.parent_id');
 
 		// Join on voting table
@@ -463,7 +468,7 @@ class ContentModelArticles extends JModelList
 				$endDateRange = $db->quote($this->getState('filter.end_date_range', $nullDate));
 				$query->where(
 					'(' . $dateField . ' >= ' . $startDateRange . ' AND ' . $dateField .
-						' <= ' . $endDateRange . ')'
+					' <= ' . $endDateRange . ')'
 				);
 				break;
 
@@ -471,7 +476,7 @@ class ContentModelArticles extends JModelList
 				$relativeDate = (int) $this->getState('filter.relative_date', 0);
 				$query->where(
 					$dateField . ' >= DATE_SUB(' . $nowDate . ', INTERVAL ' .
-						$relativeDate . ' DAY)'
+					$relativeDate . ' DAY)'
 				);
 				break;
 
@@ -495,7 +500,7 @@ class ContentModelArticles extends JModelList
 				case 'author':
 					$query->where(
 						'LOWER( CASE WHEN a.created_by_alias > ' . $db->quote(' ') .
-							' THEN a.created_by_alias ELSE ua.name END ) LIKE ' . $filter . ' '
+						' THEN a.created_by_alias ELSE ua.name END ) LIKE ' . $filter . ' '
 					);
 					break;
 
