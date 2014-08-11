@@ -1256,7 +1256,8 @@ CREATE TABLE IF NOT EXISTS `#__menu` (
   KEY `idx_left_right` (`lft`,`rgt`),
   KEY `idx_alias` (`alias`),
   KEY `idx_path` (`path`(255)),
-  KEY `idx_language` (`language`)
+  KEY `idx_language` (`language`),
+	KEY 'idx_client_id_published_lft' ('client_id','published','lft')
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=102;
 
 --
