@@ -1964,7 +1964,8 @@ CREATE TABLE IF NOT EXISTS `#__viewlevels` (
   `ordering` int(11) NOT NULL DEFAULT 0,
   `rules` varchar(5120) NOT NULL COMMENT 'JSON encoded access control.',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_assetgroup_title_lookup` (`title`)
+  UNIQUE KEY `idx_assetgroup_title_lookup` (`title`),
+	KEY `idx_ordering_title` (`ordering`,`title`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=7;
 
 --
