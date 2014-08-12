@@ -232,7 +232,8 @@ CREATE TABLE IF NOT EXISTS `#__categories` (
   KEY `idx_path` (`path`),
   KEY `idx_left_right` (`lft`,`rgt`),
   KEY `idx_alias` (`alias`),
-  KEY `idx_language` (`language`)
+  KEY `idx_language` (`language`),
+	KEY `idx_access_lft` (`access`,`lft`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 --
@@ -354,7 +355,9 @@ CREATE TABLE IF NOT EXISTS `#__content` (
   KEY `idx_createdby` (`created_by`),
   KEY `idx_featured_catid` (`featured`,`catid`),
   KEY `idx_language` (`language`),
-  KEY `idx_xreference` (`xreference`)
+  KEY `idx_xreference` (`xreference`),
+	KEY `idx_access_publish_up_created` (`access`,`publish_up`,`created`)
+
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
