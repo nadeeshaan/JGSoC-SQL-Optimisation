@@ -340,32 +340,34 @@ abstract class JModuleHelper
 
 		$db = JFactory::getDbo();
 
-		$query = $db->getQuery(true)
-			->select('m.id, m.title, m.module, m.position, m.content, m.showtitle, m.params, mm.menuid')
-			->from('#__modules AS m')
-			->join('LEFT', '#__modules_menu AS mm ON mm.moduleid = m.id')
-			->where('m.published = 1')
-
-			->join('LEFT', '#__extensions AS e ON e.element = m.module AND e.client_id = m.client_id')
-			->where('e.enabled = 1');
-
 		$date = JFactory::getDate();
 		$now = $date->toSql();
 		$nullDate = $db->getNullDate();
-		$query->where('(m.publish_up = ' . $db->quote($nullDate) . ' OR m.publish_up <= ' . $db->quote($now) . ')')
-			->where('(m.publish_down = ' . $db->quote($nullDate) . ' OR m.publish_down >= ' . $db->quote($now) . ')')
 
-			->where('m.access IN (' . $groups . ')')
-			->where('m.client_id = ' . $clientId)
-			->where('(mm.menuid = ' . (int) $Itemid . ' OR mm.menuid <= 0)');
+		$subQuery = $db->getQuery(true)
+			->select('id,client_id, title, module, position, content, showtitle, params')
+			->from('#__modules')
+			->where('published = 1')
+			->where('(publish_up = ' . $db->quote($nullDate) . ' OR publish_up <= ' . $db->quote($now) . ')')
+			->where('(publish_down = ' . $db->quote($nullDate) . ' OR publish_down >= ' . $db->quote($now) . ')')
+			->where('access IN (' . $groups . ')')
+			->where('client_id = ' . $clientId);
 
 		// Filter by language
 		if ($app->isSite() && $app->getLanguageFilter())
 		{
-			$query->where('m.language IN (' . $db->quote($lang) . ',' . $db->quote('*') . ')');
+			$subQuery->where('language IN (' . $db->quote($lang) . ',' . $db->quote('*') . ')');
 		}
 
-		$query->order('m.position, m.ordering');
+		$subQuery->order('position, ordering');
+
+		$query = $db->getQuery(true)
+			->select('m.id, m.title, m.module, m.position, m.content, m.showtitle, m.params, mm.menuid')
+			->from('(' . $subQuery->__toString() . ')AS m')
+			->join('LEFT', '#__modules_menu AS mm ON mm.moduleid = m.id')
+			->join('LEFT', '#__extensions AS e ON e.element = m.module AND e.client_id = m.client_id')
+			->where('e.enabled = 1')
+			->where('(mm.menuid = ' . (int) $Itemid . ' OR mm.menuid <= 0)');
 
 		// Set the query
 		$db->setQuery($query);
