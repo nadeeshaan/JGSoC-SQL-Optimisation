@@ -1413,14 +1413,37 @@ class JTableNested extends JTable
 			}
 		}
 
+		$pathField = false;
+
+		// Get the set of table fields of the corresponding table
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $this->_tbl;
+		$this->_db->setQuery($getTableFieldsQuery);
+		$fieldsList = $this->_db->loadRowList();
+
+		// Check whether the table field se contains the path field if so $pathField is set to true
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'path')
+			{
+				$pathField = true;
+			}
+		}
+
 		// We've got the left value, and now that we've processed
 		// the children of this node we also know the right value.
 		$query->clear()
 			->update($this->_tbl)
 			->set('lft = ' . (int) $leftId)
 			->set('rgt = ' . (int) $rightId)
-			->set('level = ' . (int) $level)
-			->where($this->_tbl_key . ' = ' . (int) $parentId);
+			->set('level = ' . (int) $level);
+
+		// Only if the path field has not been removed from the table update the path field
+		if ($pathField)
+		{
+			$query->set('path = ' . $this->_db->quote($path));
+		}
+
+		$query->where($this->_tbl_key . ' = ' . (int) $parentId);
 		$this->_db->setQuery($query)->execute();
 
 		// Return the right value of this node + 1.
