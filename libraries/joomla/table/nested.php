@@ -151,6 +151,67 @@ class JTableNested extends JTable
 	}
 
 	/**
+	 * Method to get correlated sub query to get the paths of the nodes
+	 *
+	 * @param   string  $mapField  table field to map with the n.id Usually given as a.id
+	 *
+	 * @return JDatabaseQuery
+	 */
+	public function getCorrelatedPathQuery($mapField)
+	{
+		$query = $this->_db->getQuery(true)
+			->select('group_concat(p.alias SEPARATOR "/")')
+			->from($this->_tbl . ' AS n, ' . $this->_tbl . ' AS p')
+			->where('n.lft BETWEEN p.lft AND p.rgt')
+			->where('n.id = ' . $mapField)
+			->where('p.alias != "root"')
+			->order('p.lft');
+
+		return $query;
+	}
+
+	/**
+	 * Method to get correlated sub query to get the parent_id of the nodes
+	 *
+	 * @param   string  $lft  lft value field as an example a.lft
+	 *
+	 * @param   string  $rgt  rgt value field as an example a.rgt
+	 *
+	 * @return JDatabaseQuery
+	 */
+	public function getCorrelatedParentIdQuery($lft,$rgt)
+	{
+		$query = $this->_db->getQuery(true)
+			->select('id')
+			->from($this->_tbl)
+			->where('lft < ' . $lft)
+			->where('rgt > ' . $rgt)
+			->order('rgt - ' . $rgt . ' ASC')
+			->setLimit(1);
+
+		return $query;
+	}
+
+	/**
+	 * Method to get correlated sub query to get the level of the nodes
+	 *
+	 * @param   string  $mapField  table field to map with the p.id Usually given as a.id
+	 *
+	 * @return JDatabaseQuery
+	 */
+	public function getCorrelatedLevelQuery($mapField)
+	{
+		$query = $this->_db->getQuery(true)
+			->select('COUNT(n.id)')
+			->from($this->_tbl . ' AS n, ' . $this->_tbl . ' AS p')
+			->where('p.lft BETWEEN n.lft AND n.rgt')
+			->where('p.id = ' . $mapField)
+			->where('n.alias != "root"');
+
+		return $query;
+	}
+
+	/**
 	 * Method to get a node and all its child nodes.
 	 *
 	 * @param   integer  $pk          Primary key of the node for which to get the tree.
@@ -1352,14 +1413,37 @@ class JTableNested extends JTable
 			}
 		}
 
+		$pathField = false;
+
+		// Get the set of table fields of the corresponding table
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $this->_tbl;
+		$this->_db->setQuery($getTableFieldsQuery);
+		$fieldsList = $this->_db->loadRowList();
+
+		// Check whether the table field se contains the path field if so $pathField is set to true
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'path')
+			{
+				$pathField = true;
+			}
+		}
+
 		// We've got the left value, and now that we've processed
 		// the children of this node we also know the right value.
 		$query->clear()
 			->update($this->_tbl)
 			->set('lft = ' . (int) $leftId)
 			->set('rgt = ' . (int) $rightId)
-			->set('level = ' . (int) $level)
-			->where($this->_tbl_key . ' = ' . (int) $parentId);
+			->set('level = ' . (int) $level);
+
+		// Only if the path field has not been removed from the table update the path field
+		if ($pathField)
+		{
+			$query->set('path = ' . $this->_db->quote($path));
+		}
+
+		$query->where($this->_tbl_key . ' = ' . (int) $parentId);
 		$this->_db->setQuery($query)->execute();
 
 		// Return the right value of this node + 1.
