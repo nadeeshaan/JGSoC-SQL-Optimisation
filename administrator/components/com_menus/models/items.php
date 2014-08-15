@@ -67,6 +67,7 @@ class MenusModelItems extends JModelList
 	 * Note. Calling getState in this method will result in recursion.
 	 *
 	 * @return  void
+	 *
 	 * @since   1.6
 	 */
 	protected function populateState($ordering = null, $direction = null)
@@ -186,24 +187,63 @@ class MenusModelItems extends JModelList
 		$user = JFactory::getUser();
 		$app = JFactory::getApplication();
 
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_menus/tables');
+		$menuTable = JTable::getInstance('Menu', 'MenusTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $menuTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$pathField = '(' . $menuTable->getCorrelatedPathQuery('a.id') . ') AS path';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'path')
+			{
+				$pathField = 'a.path';
+			}
+		}
+
 		// Select all fields from the table.
 		$query->select(
 			$this->getState(
 				'list.select',
-				$db->quoteName(
-					array('a.id', 'a.menutype', 'a.title', 'a.alias', 'a.note', 'a.path', 'a.link', 'a.type', 'a.parent_id', 'a.level', 'a.published', 'a.component_id', 'a.checked_out', 'a.checked_out_time', 'a.browserNav', 'a.access', 'a.img', 'a.template_style_id', 'a.params', 'a.lft', 'a.rgt', 'a.home', 'a.language', 'a.client_id'),
-					array(null, null, null, null, null, null, null, null, null, null, 'apublished', null, null, null, null, null, null, null, null, null, null, null, null, null)
-				)
+				array('a.id',
+					'a.menutype',
+					'a.title',
+					'a.alias',
+					'a.note',
+					$pathField,
+					'a.link',
+					'a.type',
+					'a.parent_id',
+					'a.level',
+					'a.published',
+					'a.component_id',
+					'a.checked_out',
+					'a.checked_out_time',
+					'a.browserNav',
+					'a.access',
+					'a.img',
+					'a.template_style_id',
+					'a.params',
+					'a.lft',
+					'a.rgt',
+					'a.home',
+					'a.language',
+					'a.client_id'
+				),
+				array(null, null, null, null, null, null, null, null, null, null, 'apublished', null, null, null, null, null, null, null, null, null, null, null, null, null)
 			)
 		);
 		$query->select(
 			'CASE a.type' .
-				' WHEN ' . $db->quote('component') . ' THEN a.published+2*(e.enabled-1) ' .
-				' WHEN ' . $db->quote('url') . ' THEN a.published+2 ' .
-				' WHEN ' . $db->quote('alias') . ' THEN a.published+4 ' .
-				' WHEN ' . $db->quote('separator') . ' THEN a.published+6 ' .
-				' WHEN ' . $db->quote('heading') . ' THEN a.published+8 ' .
-				' END AS published'
+			' WHEN ' . $db->quote('component') . ' THEN a.published+2*(e.enabled-1) ' .
+			' WHEN ' . $db->quote('url') . ' THEN a.published+2 ' .
+			' WHEN ' . $db->quote('alias') . ' THEN a.published+4 ' .
+			' WHEN ' . $db->quote('separator') . ' THEN a.published+6 ' .
+			' WHEN ' . $db->quote('heading') . ' THEN a.published+8 ' .
+			' END AS published'
 		);
 		$query->from($db->quoteName('#__menu') . ' AS a');
 

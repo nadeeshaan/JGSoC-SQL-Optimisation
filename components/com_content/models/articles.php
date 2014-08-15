@@ -177,6 +177,25 @@ class ContentModelArticles extends JModelList
 		$db = $this->getDbo();
 		$query = $db->getQuery(true);
 
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+		$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $catTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$catPathField = '(' . $catTable->getCorrelatedPathQuery('c.id') . ') AS category_route';
+		$parentPathField = '(' . $catTable->getCorrelatedPathQuery('parent.id') . ') AS parent_route';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'path')
+			{
+				$catPathField = 'c.path AS category_route';
+				$parentPathField = 'parent.path AS parent_route';
+			}
+		}
+
 		// Query to retrieve the un published categories
 		$unpublishedCatQuery = 'SELECT DISTINCT cat.id as id FROM #__categories AS cat JOIN #__categories AS parent ' .
 			'ON cat.lft BETWEEN parent.lft AND parent.rgt WHERE parent.extension = ' . $db->quote('com_content');
@@ -254,7 +273,7 @@ class ContentModelArticles extends JModelList
 		}
 
 		// Join over the categories.
-		$query->select('c.title AS category_title, c.path AS category_route, c.access AS category_access, c.alias AS category_alias')
+		$query->select('c.title AS category_title,' . $catPathField . ', c.access AS category_access, c.alias AS category_alias')
 			->join('LEFT', '#__categories AS c ON c.id = a.catid');
 
 		// Join over the users for the author and modified_by names.
@@ -265,7 +284,7 @@ class ContentModelArticles extends JModelList
 			->join('LEFT', '#__users AS uam ON uam.id = a.modified_by');
 
 		// Join over the categories to get parent category titles
-		$query->select('parent.title as parent_title, parent.id as parent_id, parent.path as parent_route, parent.alias as parent_alias')
+		$query->select('parent.title as parent_title, parent.id as parent_id,' . $parentPathField . ', parent.alias as parent_alias')
 			->join('LEFT', '#__categories as parent ON parent.id = c.parent_id');
 
 		// Join on voting table

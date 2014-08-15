@@ -147,13 +147,30 @@ class CategoriesModelCategories extends JModelList
 		$query = $db->getQuery(true);
 		$user = JFactory::getUser();
 
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+		$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $catTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$PathField = '(' . $catTable->getCorrelatedPathQuery('a.id') . ') AS path';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'path')
+			{
+				$PathField = 'a.path';
+			}
+		}
+
 		// Select the required fields from the table.
 		$query->select(
 			$this->getState(
 				'list.select',
 				'a.id, a.title, a.alias, a.note, a.published, a.access' .
 				', a.checked_out, a.checked_out_time, a.created_user_id' .
-				', a.path, a.parent_id, a.level, a.lft, a.rgt' .
+				', ' . $PathField . ', a.parent_id, a.level, a.lft, a.rgt' .
 				', a.language'
 			)
 		);
@@ -177,6 +194,7 @@ class CategoriesModelCategories extends JModelList
 
 		// Join over the associations.
 		$assoc = $this->getAssoc();
+
 		if ($assoc)
 		{
 			$query->select('COUNT(asso2.id)>1 as association')
@@ -212,6 +230,7 @@ class CategoriesModelCategories extends JModelList
 
 		// Filter by published state
 		$published = $this->getState('filter.published');
+
 		if (is_numeric($published))
 		{
 			$query->where('a.published = ' . (int) $published);
@@ -223,6 +242,7 @@ class CategoriesModelCategories extends JModelList
 
 		// Filter by search in title
 		$search = $this->getState('filter.search');
+
 		if (!empty($search))
 		{
 			if (stripos($search, 'id:') === 0)
@@ -249,6 +269,7 @@ class CategoriesModelCategories extends JModelList
 
 		// Filter by a single tag.
 		$tagId = $this->getState('filter.tag');
+
 		if (is_numeric($tagId))
 		{
 			$query->where($db->quoteName('tagmap.tag_id') . ' = ' . (int) $tagId)
@@ -262,6 +283,7 @@ class CategoriesModelCategories extends JModelList
 		// Add the list ordering clause
 		$listOrdering = $this->getState('list.ordering', 'a.lft');
 		$listDirn = $db->escape($this->getState('list.direction', 'ASC'));
+
 		if ($listOrdering == 'a.access')
 		{
 			$query->order('a.access ' . $listDirn . ', a.lft ' . $listDirn);
@@ -271,7 +293,7 @@ class CategoriesModelCategories extends JModelList
 			$query->order($db->escape($listOrdering) . ' ' . $listDirn);
 		}
 
-		//echo nl2br(str_replace('#__','jos_',$query));
+		// Echo nl2br(str_replace('#__','jos_',$query));
 		return $query;
 	}
 
