@@ -72,6 +72,27 @@ class ContentModelArticle extends JModelItem
 	{
 		$user	= JFactory::getUser();
 
+		// Create a new query object.
+		$db = $this->getDbo();
+		$query = $db->getQuery(true);
+
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+		$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $catTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$parentPathField = '(' . $catTable->getCorrelatedPathQuery('parent.id') . ') AS parent_route';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'path')
+			{
+				$parentPathField = 'parent.path AS parent_route';
+			}
+		}
+
 		$pk = (!empty($pk)) ? $pk : (int) $this->getState('article.id');
 
 		if ($this->_item === null)
@@ -83,9 +104,7 @@ class ContentModelArticle extends JModelItem
 		{
 			try
 			{
-				$db = $this->getDbo();
-				$query = $db->getQuery(true)
-					->select(
+				$query->select(
 						$this->getState(
 							'item.select', 'a.id, a.asset_id, a.title, a.alias, a.introtext, a.fulltext, ' .
 							// If badcats is not null, this means that the article is inside an unpublished category
@@ -116,7 +135,7 @@ class ContentModelArticle extends JModelItem
 				}
 
 				// Join over the categories to get parent category titles
-				$query->select('parent.title as parent_title, parent.id as parent_id, parent.path as parent_route, parent.alias as parent_alias')
+				$query->select('parent.title as parent_title, parent.id as parent_id,' . $parentPathField . ', parent.alias as parent_alias')
 					->join('LEFT', '#__categories as parent ON parent.id = c.parent_id');
 
 				// Join on voting table
@@ -125,7 +144,8 @@ class ContentModelArticle extends JModelItem
 
 					->where('a.id = ' . (int) $pk);
 
-				if ((!$user->authorise('core.edit.state', 'com_content')) && (!$user->authorise('core.edit', 'com_content'))) {
+				if ((!$user->authorise('core.edit.state', 'com_content')) && (!$user->authorise('core.edit', 'com_content')))
+				{
 					// Filter by start and end dates.
 					$nullDate = $db->quote($db->getNullDate());
 					$date = JFactory::getDate();
