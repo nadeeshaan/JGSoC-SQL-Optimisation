@@ -1628,7 +1628,7 @@ class JTableNested extends JTable
 		}
 
 		// Lock the table aliases for READ
-		$this->_db->setQuery("LOCK TABLES #__tags AS n READ, #__tags AS p READ,#__tags AS a READ");
+		$this->_db->setQuery('LOCK TABLES ' . $this->_tbl . ' AS n READ,' . $this->_tbl . ' AS p READ,' . $this->_tbl . ' AS a READ');
 		$this->_db->loadResult();
 
 		// Get the node data.
