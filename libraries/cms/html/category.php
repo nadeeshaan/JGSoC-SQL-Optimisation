@@ -118,12 +118,30 @@ abstract class JHtmlCategory
 	{
 		$hash = md5($extension . '.' . serialize($config));
 
+		$db = JFactory::getDbo();
+		$query = $db->getQuery(true);
+
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+		$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $catTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$levelField = '(' . $catTable->getCorrelatedLevelQuery('a.id') . ') AS level';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'a.level';
+			}
+		}
+
 		if (!isset(static::$items[$hash]))
 		{
 			$config = (array) $config;
-			$db = JFactory::getDbo();
-			$query = $db->getQuery(true)
-				->select('a.id, a.title, a.level, a.parent_id')
+			$query->select('a.id, a.title, ' . $levelField . ', a.parent_id')
 				->from('#__categories AS a')
 				->where('a.parent_id > 0');
 
