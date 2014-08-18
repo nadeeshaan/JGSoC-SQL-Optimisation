@@ -125,13 +125,36 @@ class TagsModelTags extends JModelList
 		$query = $db->getQuery(true);
 		$user = JFactory::getUser();
 
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_tags/tables');
+		$tagsTable = JTable::getInstance('Tag', 'TagsTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $tagsTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$parentIdField = '(' . $tagsTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
+		$pathField = '(' . $tagsTable->getCorrelatedPathQuery('a.id') . ') AS path';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'parent_id')
+			{
+				$parentIdField = 'a.parent_id';
+			}
+
+			if ($fieldsList[$key][0] == 'path')
+			{
+				$pathField = 'a.path';
+			}
+		}
+
 		// Select the required fields from the table.
 		$query->select(
 			$this->getState(
 				'list.select',
 				'a.id, a.title, a.alias, a.note, a.published, a.access' .
 					', a.checked_out, a.checked_out_time, a.created_user_id' .
-					', a.path, a.parent_id, a.level, a.lft, a.rgt' .
+					', ' . $pathField . ', ' . $parentIdField . ', a.level, a.lft, a.rgt' .
 					', a.language'
 			)
 		);
