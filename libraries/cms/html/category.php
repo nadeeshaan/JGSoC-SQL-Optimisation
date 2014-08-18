@@ -48,7 +48,7 @@ abstract class JHtmlCategory
 			$query = $db->getQuery(true)
 				->select('a.id, a.title, a.level')
 				->from('#__categories AS a')
-				->where('a.parent_id > 0');
+				->where('a.alias != "root"');
 
 			// Filter on extension.
 			$query->where('extension = ' . $db->quote($extension));
@@ -120,12 +120,30 @@ abstract class JHtmlCategory
 
 		if (!isset(static::$items[$hash]))
 		{
-			$config = (array) $config;
 			$db = JFactory::getDbo();
-			$query = $db->getQuery(true)
-				->select('a.id, a.title, a.level, a.parent_id')
+			$query = $db->getQuery(true);
+
+			JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+			$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
+			$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $catTable->getTableName();
+			$db->setQuery($getTableFieldsQuery);
+			$fieldsList = $db->loadRowList();
+
+			$parentIdField = '(' . $catTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
+
+			foreach ($fieldsList as $key => $value)
+			{
+				if ($fieldsList[$key][0] == 'parent_id')
+				{
+					$parentIdField = 'a.parent_id';
+				}
+			}
+
+			$config = (array) $config;
+			$query->select('a.id, a.title, a.level, ' . $parentIdField)
 				->from('#__categories AS a')
-				->where('a.parent_id > 0');
+				->where('a.alias != "root"');
 
 			// Filter on extension.
 			$query->where('extension = ' . $db->quote($extension));

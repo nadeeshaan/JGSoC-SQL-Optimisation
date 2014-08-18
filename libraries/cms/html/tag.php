@@ -116,14 +116,14 @@ abstract class JHtmlTag
 		$db = JFactory::getDbo();
 		$query = $db->getQuery(true);
 
-		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_menus/tables');
-		$menuTable = JTable::getInstance('Menu', 'MenusTable');
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_tags/tables');
+		$tagsTable = JTable::getInstance('Tag', 'TagsTable');
 
-		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $menuTable->getTableName();
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $tagsTable->getTableName();
 		$db->setQuery($getTableFieldsQuery);
 		$fieldsList = $db->loadRowList();
 
-		$parentIdField = '(' . $menuTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
+		$parentIdField = '(' . $tagsTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
 
 		foreach ($fieldsList as $key => $value)
 		{
@@ -135,7 +135,7 @@ abstract class JHtmlTag
 
 		$query->select('a.id, a.title, a.level, ' . $parentIdField)
 			->from('#__tags AS a')
-			->where('a.alias != "root"');
+			->where('a.lft > 0');
 
 		// Filter on the published state
 		if (isset($config['filter.published']))

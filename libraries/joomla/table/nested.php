@@ -1627,14 +1627,23 @@ class JTableNested extends JTable
 			}
 		}
 
-		$this->_db->setQuery('LOCK TABLES ' . $this->_tbl . ' AS n READ,' . $this->_tbl . ' AS p READ,' . $this->_tbl . ' AS a READ');
-		$this->_db->loadResult();
+		if ($this->_tbl == "#__tags" || $this->_tbl == "#__menu" || $this->_tbl == "#__categories")
+		{
+			$this->_db->setQuery('LOCK TABLES ' . $this->_tbl . ' AS n READ,' . $this->_tbl . ' AS p READ,' . $this->_tbl . ' AS a READ');
+			$this->_db->loadResult();
 
-		// Get the node data.
-		$query = $this->_db->getQuery(true)
-			->select('a.' . $this->_tbl_key . ', ' . $parentIdField . ', a.level, a.lft, a.rgt')
-			->from($this->_tbl . ' AS a')
-			->where('a.' . $k . ' = ' . (int) $id);
+			$query = $this->_db->getQuery(true)
+				->select('a.' . $this->_tbl_key . ', ' . $parentIdField . ', a.level, a.lft, a.rgt')
+				->from($this->_tbl . ' AS a')
+				->where('a.' . $k . ' = ' . (int) $id);
+		}
+		else
+		{
+			$query = $this->_db->getQuery(true)
+				->select($this->_tbl_key . ', parent_id, level, lft, rgt')
+				->from($this->_tbl)
+				->where($k . ' = ' . (int) $id);
+		}
 
 		$row = $this->_db->setQuery($query, 0, 1)->loadObject();
 

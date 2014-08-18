@@ -79,13 +79,30 @@ class JFormFieldCategoryEdit extends JFormFieldList
 		// If parent isn't explicitly stated but we are in com_categories assume we want parents
 		if ($oldCat != 0 && ($this->element['parent'] == true || $jinput->get('option') == 'com_categories'))
 		{
+			JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+			$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
+			$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $catTable->getTableName();
+			$db->setQuery($getTableFieldsQuery);
+			$fieldsList = $db->loadRowList();
+
+			$parentIdField = '(' . $catTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
+
+			foreach ($fieldsList as $key => $value)
+			{
+				if ($fieldsList[$key][0] == 'parent_id')
+				{
+					$parentIdField = 'a.parent_id';
+				}
+			}
+
 			// Prevent parenting to children of this item.
 			// To rearrange parents and children move the children up, not the parents down.
 			$query->join('LEFT', $db->quoteName('#__categories') . ' AS p ON p.id = ' . (int) $oldCat)
 				->where('NOT(a.lft >= p.lft AND a.rgt <= p.rgt)');
 
 			$rowQuery = $db->getQuery(true);
-			$rowQuery->select('a.id AS value, a.title AS text, a.level, a.parent_id')
+			$rowQuery->select('a.id AS value, a.title AS text, a.level, ' . $parentIdField)
 				->from('#__categories AS a')
 				->where('a.id = ' . (int) $oldCat);
 			$db->setQuery($rowQuery);
@@ -111,7 +128,7 @@ class JFormFieldCategoryEdit extends JFormFieldList
 			$query->where('a.published IN (' . implode(',', $published) . ')');
 		}
 
-		$query->group('a.id, a.title, a.level, a.lft, a.rgt, a.extension, a.parent_id, a.published')
+		$query->group('a.id')
 			->order('a.lft ASC');
 
 		// Get the options.
