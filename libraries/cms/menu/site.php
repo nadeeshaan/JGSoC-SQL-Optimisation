@@ -28,8 +28,26 @@ class JMenuSite extends JMenu
 	public function load()
 	{
 		$db    = JFactory::getDbo();
-		$query = $db->getQuery(true)
-			->select('m.id, m.menutype, m.title, m.alias, m.note, m.path AS route, m.link, m.type, m.level, m.language')
+		$query = $db->getQuery(true);
+
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_menus/tables');
+		$menuTable = JTable::getInstance('Menu', 'MenusTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $menuTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$levelField = '(' . $menuTable->getCorrelatedLevelQuery('m.id') . ') AS level';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'm.level';
+			}
+		}
+
+		$query->select('m.id, m.menutype, m.title, m.alias, m.note, m.path AS route, m.link, m.type, ' . $levelField . ', m.language')
 			->select($db->quoteName('m.browserNav') . ', m.access, m.params, m.home, m.img, m.template_style_id, m.component_id, m.parent_id')
 			->select('e.element as component')
 			->from('#__menu AS m')
