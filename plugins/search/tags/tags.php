@@ -64,6 +64,23 @@ class PlgSearchTags extends JPlugin
 		$app = JFactory::getApplication();
 		$user = JFactory::getUser();
 
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_tags/tables');
+		$tagsTable = JTable::getInstance('Tag', 'TagsTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $tagsTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$pathField = '(' . $tagsTable->getCorrelatedPathQuery('a.id') . ') AS path';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'path')
+			{
+				$pathField = 'a.path';
+			}
+		}
+
 		$section = JText::_('PLG_SEARCH_TAGS_TAGS');
 		$limit = $this->params->def('search_limit', 50);
 
@@ -105,7 +122,7 @@ class PlgSearchTags extends JPlugin
 
 		$query->select('a.id, a.title, a.alias, a.note, a.published, a.access' .
 			', a.checked_out, a.checked_out_time, a.created_user_id' .
-			', a.path, a.parent_id, a.level, a.lft, a.rgt' .
+			', ' . $pathField . ', a.parent_id, a.level, a.lft, a.rgt' .
 			', a.language, a.created_time AS created, a.note, a.description');
 
 		$case_when_item_alias = ' CASE WHEN ';
