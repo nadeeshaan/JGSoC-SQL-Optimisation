@@ -143,7 +143,7 @@ abstract class JHtmlCategory
 			$config = (array) $config;
 			$query->select('a.id, a.title, a.level, ' . $parentIdField)
 				->from('#__categories AS a')
-				->where('a.alias != "root"');
+				->where('a.lft > 0');
 
 			// Filter on extension.
 			$query->where('extension = ' . $db->quote($extension));

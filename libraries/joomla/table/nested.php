@@ -206,7 +206,7 @@ class JTableNested extends JTable
 			->from($this->_tbl . ' AS n, ' . $this->_tbl . ' AS p')
 			->where('p.lft BETWEEN n.lft AND n.rgt')
 			->where('p.id = ' . $mapField)
-			->where('n.alias != "root"');
+			->where('n.lft > 0');
 
 		return $query;
 	}

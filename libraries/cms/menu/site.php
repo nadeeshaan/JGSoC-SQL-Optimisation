@@ -60,7 +60,7 @@ class JMenuSite extends JMenu
 			->from('#__menu AS m')
 			->join('LEFT', '#__extensions AS e ON m.component_id = e.extension_id')
 			->where('m.published = 1')
-			->where('m.alias != "root"')
+			->where('m.lft > 0')
 			->where('m.client_id = 0')
 			->order('m.lft');
 
