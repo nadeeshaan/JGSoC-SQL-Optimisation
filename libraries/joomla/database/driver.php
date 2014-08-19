@@ -970,6 +970,23 @@ abstract class JDatabaseDriver extends JDatabase implements JDatabaseInterface
 		$fields = array();
 		$values = array();
 
+		// Set the levelField assuming not available in the table
+		$parentIdField = false;
+
+		// Get the set of table fields of the corresponding table
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $table;
+		$this->setQuery($getTableFieldsQuery);
+		$fieldsList = $this->loadRowList();
+
+		// Check whether the table field se contains the path field if so $pathField is set to true
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'parent_id')
+			{
+				$parentIdField = true;
+			}
+		}
+
 		// Iterate over the object variables to build the query fields and values.
 		foreach (get_object_vars($object) as $k => $v)
 		{
@@ -985,9 +1002,22 @@ abstract class JDatabaseDriver extends JDatabase implements JDatabaseInterface
 				continue;
 			}
 
-			// Prepare and sanitize the fields and values for the database query.
-			$fields[] = $this->quoteName($k);
-			$values[] = $this->quote($v);
+			if (!$parentIdField)
+			{
+				// Prepare and sanitize the fields and values for the database query.
+				if ($k != 'parent_id')
+				{
+					$fields[] = $this->quoteName($k);
+					$values[] = $this->quote($v);
+				}
+			}
+
+			else
+			{
+				// Prepare and sanitize the fields and values for the database query.
+				$fields[] = $this->quoteName($k);
+				$values[] = $this->quote($v);
+			}
 		}
 
 		// Create the base insert statement.

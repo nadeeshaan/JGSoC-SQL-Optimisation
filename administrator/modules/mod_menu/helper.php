@@ -66,8 +66,25 @@ abstract class ModMenuHelper
 		$query  = $db->getQuery(true);
 		$result = array();
 
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_menus/tables');
+		$menuTable = JTable::getInstance('Menu', 'MenusTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $menuTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$parentIdField = '(' . $menuTable->getCorrelatedParentIdQuery('m.lft', 'm.rgt') . ') AS parent_id';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'parent_id')
+			{
+				$parentIdField = 'm.parent_id';
+			}
+		}
+
 		// Prepare the query.
-		$query->select('m.id, m.title, m.alias, m.link, m.parent_id, m.img, e.element')
+		$query->select('m.id, m.title, m.alias, m.link, ' . $parentIdField . ', m.img, e.element')
 			->from('#__menu AS m');
 
 		// Filter on the enabled states.

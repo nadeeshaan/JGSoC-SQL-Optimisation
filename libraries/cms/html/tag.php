@@ -114,10 +114,28 @@ abstract class JHtmlTag
 		$hash = md5(serialize($config));
 		$config = (array) $config;
 		$db = JFactory::getDbo();
-		$query = $db->getQuery(true)
-			->select('a.id, a.title, a.level, a.parent_id')
+		$query = $db->getQuery(true);
+
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_tags/tables');
+		$tagsTable = JTable::getInstance('Tag', 'TagsTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $tagsTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$parentIdField = '(' . $tagsTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'parent_id')
+			{
+				$parentIdField = 'a.parent_id';
+			}
+		}
+
+		$query->select('a.id, a.title, a.level, ' . $parentIdField)
 			->from('#__tags AS a')
-			->where('a.parent_id > 0');
+			->where('a.lft > 0');
 
 		// Filter on the published state
 		if (isset($config['filter.published']))

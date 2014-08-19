@@ -210,6 +210,30 @@ class JCategories
 		$user = JFactory::getUser();
 		$extension = $this->_extension;
 
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+		$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $catTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$pathField = '(' . $catTable->getCorrelatedPathQuery('c.id') . ') AS path';
+
+		$parentIdField = '(' . $catTable->getCorrelatedParentIdQuery('c.lft', 'c.rgt') . ') AS parent_id';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'path')
+			{
+				$pathField = 'c.path';
+			}
+
+			if ($fieldsList[$key][0] == 'parent_id')
+			{
+				$parentIdField = 'c.parent_id';
+			}
+		}
+
 		// Record that has this $id has been checked
 		$this->_checkedCategories[$id] = true;
 
@@ -218,8 +242,8 @@ class JCategories
 		// Right join with c for category
 		$query->select('c.id, c.asset_id, c.access, c.alias, c.checked_out, c.checked_out_time,
 			c.created_time, c.created_user_id, c.description, c.extension, c.hits, c.language, c.level,
-			c.lft, c.metadata, c.metadesc, c.metakey, c.modified_time, c.note, c.params, c.parent_id,
-			c.path, c.published, c.rgt, c.title, c.modified_user_id, c.version');
+			c.lft, c.metadata, c.metadesc, c.metakey, c.modified_time, c.note, c.params, ' . $parentIdField . ',
+			' . $pathField . ', c.published, c.rgt, c.title, c.modified_user_id, c.version');
 		$case_when = ' CASE WHEN ';
 		$case_when .= $query->charLength('c.alias', '!=', '0');
 		$case_when .= ' THEN ';
@@ -276,12 +300,7 @@ class JCategories
 		}
 
 		// Group by
-		$query->group(
-			'c.id, c.asset_id, c.access, c.alias, c.checked_out, c.checked_out_time,
-			 c.created_time, c.created_user_id, c.description, c.extension, c.hits, c.language, c.level,
-			 c.lft, c.metadata, c.metadesc, c.metakey, c.modified_time, c.note, c.params, c.parent_id,
-			 c.path, c.published, c.rgt, c.title, c.modified_user_id, c.version'
-		);
+		$query->group('c.id');
 
 		// Get the results
 		$db->setQuery($query);
