@@ -88,7 +88,7 @@ class JFormFieldCategoryEdit extends JFormFieldList
 		// Filter by the extension type
 		if ($this->element['parent'] == true || $jinput->get('option') == 'com_categories')
 		{
-			$query->where('(a.extension = ' . $db->quote($extension) . ' OR a.parent_id = 0)');
+			$query->where('(a.extension = ' . $db->quote($extension) . ' OR a.lft = 0)');
 		}
 		else
 		{

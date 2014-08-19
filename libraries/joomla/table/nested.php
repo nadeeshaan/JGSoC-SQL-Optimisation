@@ -472,7 +472,7 @@ class JTableNested extends JTable
 			$query->clear()
 				->select($this->_tbl_key . ', parent_id, level, lft, rgt')
 				->from($this->_tbl)
-				->where('parent_id = 0')
+				->where('lft = 0')
 				->order('lft DESC');
 			$this->_db->setQuery($query, 0, 1);
 			$reference = $this->_db->loadObject();
