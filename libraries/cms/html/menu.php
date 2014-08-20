@@ -73,10 +73,28 @@ abstract class JHtmlMenu
 			$menus = static::menus();
 
 			$db = JFactory::getDbo();
-			$query = $db->getQuery(true)
-				->select('a.id AS value, a.title AS text, a.level, a.menutype')
+			$query = $db->getQuery(true);
+
+			JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_menus/tables');
+			$menuTable = JTable::getInstance('Menu', 'MenusTable');
+
+			$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $menuTable->getTableName();
+			$db->setQuery($getTableFieldsQuery);
+			$fieldsList = $db->loadRowList();
+
+			$levelField = '(' . $menuTable->getCorrelatedLevelQuery('a.id') . ') AS level';
+
+			foreach ($fieldsList as $key => $value)
+			{
+				if ($fieldsList[$key][0] == 'level')
+				{
+					$levelField = 'a.level';
+				}
+			}
+
+			$query->select('a.id AS value, a.title AS text, ' . $levelField . ', a.menutype')
 				->from('#__menu AS a')
-				->where('a.parent_id > 0')
+				->where('a.lft > 0')
 				->where('a.type <> ' . $db->quote('url'))
 				->where('a.client_id = 0');
 

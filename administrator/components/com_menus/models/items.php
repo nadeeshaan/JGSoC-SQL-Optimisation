@@ -186,14 +186,65 @@ class MenusModelItems extends JModelList
 		$user = JFactory::getUser();
 		$app = JFactory::getApplication();
 
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_menus/tables');
+		$menuTable = JTable::getInstance('Menu', 'MenusTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $menuTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$pathField = '(' . $menuTable->getCorrelatedPathQuery('a.id') . ') AS path';
+		$parentIdField = '(' . $menuTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
+		$levelField = '(' . $menuTable->getCorrelatedLevelQuery('a.id') . ') AS level';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'path')
+			{
+				$pathField = 'a.path';
+			}
+
+			if ($fieldsList[$key][0] == 'parent_id')
+			{
+				$parentIdField = 'a.parent_id';
+			}
+
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'a.level';
+			}
+		}
+
 		// Select all fields from the table.
 		$query->select(
 			$this->getState(
 				'list.select',
-				$db->quoteName(
-					array('a.id', 'a.menutype', 'a.title', 'a.alias', 'a.note', 'a.path', 'a.link', 'a.type', 'a.parent_id', 'a.level', 'a.published', 'a.component_id', 'a.checked_out', 'a.checked_out_time', 'a.browserNav', 'a.access', 'a.img', 'a.template_style_id', 'a.params', 'a.lft', 'a.rgt', 'a.home', 'a.language', 'a.client_id'),
+					array('a.id',
+						'a.menutype',
+						'a.title',
+						'a.alias',
+						'a.note',
+						$pathField,
+						'a.link',
+						'a.type',
+						$parentIdField,
+						$levelField,
+						'a.published',
+						'a.component_id',
+						'a.checked_out',
+						'a.checked_out_time',
+						'a.browserNav',
+						'a.access',
+						'a.img',
+						'a.template_style_id',
+						'a.params',
+						'a.lft',
+						'a.rgt',
+						'a.home',
+						'a.language',
+						'a.client_id'
+					),
 					array(null, null, null, null, null, null, null, null, null, null, 'apublished', null, null, null, null, null, null, null, null, null, null, null, null, null)
-				)
 			)
 		);
 		$query->select(
@@ -265,13 +316,13 @@ class MenusModelItems extends JModelList
 			{
 				if ($search = substr($search, 5))
 				{
-					$search = $db->quote('%' . str_replace(' ', '%', $db->escape(trim($search), true) . '%'));
+					$search = $db->quote('%' . $db->escape($search, true) . '%');
 					$query->where('a.link LIKE ' . $search);
 				}
 			}
 			else
 			{
-				$search = $db->quote('%' . str_replace(' ', '%', $db->escape(trim($search), true) . '%'));
+				$search = $db->quote('%' . $db->escape($search, true) . '%');
 				$query->where('(' . 'a.title LIKE ' . $search . ' OR a.alias LIKE ' . $search . ' OR a.note LIKE ' . $search . ')');
 			}
 		}

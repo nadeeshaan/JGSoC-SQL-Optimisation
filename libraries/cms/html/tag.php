@@ -7,7 +7,7 @@
  * @license     GNU General Public License version 2 or later; see LICENSE
  */
 
-defined('JPATH_PLATFORM') or die;
+defined('JPATH_BASE') or die;
 
 /**
  * Utility class for tags
@@ -114,10 +114,36 @@ abstract class JHtmlTag
 		$hash = md5(serialize($config));
 		$config = (array) $config;
 		$db = JFactory::getDbo();
-		$query = $db->getQuery(true)
-			->select('a.id, a.title, a.level, a.parent_id')
+		$query = $db->getQuery(true);
+
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_tags/tables');
+		$tagsTable = JTable::getInstance('Tag', 'TagsTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $tagsTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$parentIdField = '(' . $tagsTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
+
+		$levelField = '(' . $tagsTable->getCorrelatedLevelQuery('a.id') . ') AS level';
+
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'parent_id')
+			{
+				$parentIdField = 'a.parent_id';
+			}
+
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'a.level';
+			}
+		}
+
+		$query->select('a.id, a.title, ' . $levelField . ', ' . $parentIdField)
 			->from('#__tags AS a')
-			->where('a.parent_id > 0');
+			->where('a.lft > 0');
 
 		// Filter on the published state
 		if (isset($config['filter.published']))
@@ -163,20 +189,14 @@ abstract class JHtmlTag
 	 */
 	public static function ajaxfield($selector='#jform_tags', $allowCustom = true)
 	{
-
-		// Get the component parameters
-		$params = JComponentHelper::getParams("com_tags");
-		$minTermLength = (int) $params->get("min_term_length");
-
 		// Tags field ajax
 		$chosenAjaxSettings = new JRegistry(
 			array(
-				'selector'      => $selector,
-				'type'          => 'GET',
-				'url'           => JUri::root() . 'index.php?option=com_tags&task=tags.searchAjax',
-				'dataType'      => 'json',
-				'jsonTermKey'   => 'like',
-				'minTermLength' => $minTermLength
+				'selector'    => $selector,
+				'type'        => 'GET',
+				'url'         => JUri::root() . 'index.php?option=com_tags&task=tags.searchAjax',
+				'dataType'    => 'json',
+				'jsonTermKey' => 'like'
 			)
 		);
 		JHtml::_('formbehavior.ajaxchosen', $chosenAjaxSettings);
@@ -194,7 +214,7 @@ abstract class JHtmlTag
 						$('" . $selector . "_chzn input').keyup(function(event) {
 
 							// Tag is greater than 3 chars and enter pressed
-							if (this.value.length >= " . $minTermLength . " && (event.which === 13 || event.which === 188)) {
+							if (this.value.length >= 3 && (event.which === 13 || event.which === 188)) {
 
 								// Search an highlighted result
 								var highlighted = $('" . $selector . "_chzn').find('li.active-result.highlighted').first();

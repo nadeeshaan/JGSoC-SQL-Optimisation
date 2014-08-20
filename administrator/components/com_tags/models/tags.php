@@ -125,13 +125,42 @@ class TagsModelTags extends JModelList
 		$query = $db->getQuery(true);
 		$user = JFactory::getUser();
 
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_tags/tables');
+		$tagsTable = JTable::getInstance('Tag', 'TagsTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $tagsTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$parentIdField = '(' . $tagsTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
+		$pathField = '(' . $tagsTable->getCorrelatedPathQuery('a.id') . ') AS path';
+		$levelField = '(' . $tagsTable->getCorrelatedLevelQuery('a.id') . ') AS level';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'parent_id')
+			{
+				$parentIdField = 'a.parent_id';
+			}
+
+			if ($fieldsList[$key][0] == 'path')
+			{
+				$pathField = 'a.path';
+			}
+
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'a.level';
+			}
+		}
+
 		// Select the required fields from the table.
 		$query->select(
 			$this->getState(
 				'list.select',
 				'a.id, a.title, a.alias, a.note, a.published, a.access' .
 					', a.checked_out, a.checked_out_time, a.created_user_id' .
-					', a.path, a.parent_id, a.level, a.lft, a.rgt' .
+					', ' . $pathField . ', ' . $parentIdField . ', ' . $levelField . ', a.lft, a.rgt' .
 					', a.language'
 			)
 		);
@@ -156,7 +185,7 @@ class TagsModelTags extends JModelList
 		// Filter on the level.
 		if ($level = $this->getState('filter.level'))
 		{
-			$query->where('a.level <= ' . (int) $level);
+			$query->where($levelField . ' <= ' . (int) $level);
 		}
 
 		// Filter by access level.
@@ -198,7 +227,7 @@ class TagsModelTags extends JModelList
 			}
 			else
 			{
-				$search = $db->quote('%' . str_replace(' ', '%', $db->escape(trim($search), true) . '%'));
+				$search = $db->quote('%' . $db->escape($search, true) . '%');
 				$query->where('(a.title LIKE ' . $search . ' OR a.alias LIKE ' . $search . ' OR a.note LIKE ' . $search . ')');
 			}
 		}
