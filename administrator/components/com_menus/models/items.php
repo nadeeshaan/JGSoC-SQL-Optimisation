@@ -195,6 +195,7 @@ class MenusModelItems extends JModelList
 
 		$pathField = '(' . $menuTable->getCorrelatedPathQuery('a.id') . ') AS path';
 		$parentIdField = '(' . $menuTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
+		$levelField = '(' . $menuTable->getCorrelatedLevelQuery('a.id') . ') AS level';
 
 		foreach ($fieldsList as $key => $value)
 		{
@@ -206,6 +207,11 @@ class MenusModelItems extends JModelList
 			if ($fieldsList[$key][0] == 'parent_id')
 			{
 				$parentIdField = 'a.parent_id';
+			}
+
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'a.level';
 			}
 		}
 
@@ -222,7 +228,7 @@ class MenusModelItems extends JModelList
 						'a.link',
 						'a.type',
 						$parentIdField,
-						'a.level',
+						$levelField,
 						'a.published',
 						'a.component_id',
 						'a.checked_out',
@@ -310,13 +316,13 @@ class MenusModelItems extends JModelList
 			{
 				if ($search = substr($search, 5))
 				{
-					$search = $db->quote('%' . str_replace(' ', '%', $db->escape(trim($search), true) . '%'));
+					$search = $db->quote('%' . $db->escape($search, true) . '%');
 					$query->where('a.link LIKE ' . $search);
 				}
 			}
 			else
 			{
-				$search = $db->quote('%' . str_replace(' ', '%', $db->escape(trim($search), true) . '%'));
+				$search = $db->quote('%' . $db->escape($search, true) . '%');
 				$query->where('(' . 'a.title LIKE ' . $search . ' OR a.alias LIKE ' . $search . ' OR a.note LIKE ' . $search . ')');
 			}
 		}

@@ -220,6 +220,8 @@ class JCategories
 		$pathField = '(' . $catTable->getCorrelatedPathQuery('c.id') . ') AS path';
 
 		$parentIdField = '(' . $catTable->getCorrelatedParentIdQuery('c.lft', 'c.rgt') . ') AS parent_id';
+		
+		$levelField = '(' . $catTable->getCorrelatedLevelQuery('c.id') . ') AS level';
 
 		foreach ($fieldsList as $key => $value)
 		{
@@ -232,6 +234,11 @@ class JCategories
 			{
 				$parentIdField = 'c.parent_id';
 			}
+
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'c.level';
+			}
 		}
 
 		// Record that has this $id has been checked
@@ -241,7 +248,7 @@ class JCategories
 
 		// Right join with c for category
 		$query->select('c.id, c.asset_id, c.access, c.alias, c.checked_out, c.checked_out_time,
-			c.created_time, c.created_user_id, c.description, c.extension, c.hits, c.language, c.level,
+			c.created_time, c.created_user_id, c.description, c.extension, c.hits, c.language, ' . $levelField . ',
 			c.lft, c.metadata, c.metadesc, c.metakey, c.modified_time, c.note, c.params, ' . $parentIdField . ',
 			' . $pathField . ', c.published, c.rgt, c.title, c.modified_user_id, c.version');
 		$case_when = ' CASE WHEN ';

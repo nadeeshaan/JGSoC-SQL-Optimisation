@@ -972,6 +972,7 @@ abstract class JDatabaseDriver extends JDatabase implements JDatabaseInterface
 
 		// Set the levelField assuming not available in the table
 		$parentIdField = false;
+		$levelField = false;
 
 		// Get the set of table fields of the corresponding table
 		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $table;
@@ -984,6 +985,11 @@ abstract class JDatabaseDriver extends JDatabase implements JDatabaseInterface
 			if ($fieldsList[$key][0] == 'parent_id')
 			{
 				$parentIdField = true;
+			}
+
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = true;
 			}
 		}
 
@@ -1002,10 +1008,10 @@ abstract class JDatabaseDriver extends JDatabase implements JDatabaseInterface
 				continue;
 			}
 
-			if (!$parentIdField)
+			if (!$parentIdField || !$levelField)
 			{
 				// Prepare and sanitize the fields and values for the database query.
-				if ($k != 'parent_id')
+				if ($k != 'parent_id' || $k != 'level')
 				{
 					$fields[] = $this->quoteName($k);
 					$values[] = $this->quote($v);
@@ -1732,16 +1738,6 @@ abstract class JDatabaseDriver extends JDatabase implements JDatabaseInterface
 
 		if ($query instanceof JDatabaseQueryLimitable)
 		{
-			if (!$limit && $query->limit)
-			{
-				$limit = $query->limit;
-			}
-
-			if (!$offset && $query->offset)
-			{
-				$offset = $query->offset;
-			}
-
 			$query->setLimit($limit, $offset);
 		}
 		else

@@ -43,6 +43,33 @@ class JFormFieldCategoryEdit extends JFormFieldList
 		$published = $this->element['published'] ? $this->element['published'] : array(0, 1);
 		$name = (string) $this->element['name'];
 
+		$db = JFactory::getDbo();
+		$query = $db->getQuery(true);
+
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+		$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $catTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$levelField = '(' . $catTable->getCorrelatedLevelQuery('a.id') . ') AS level';
+
+		$parentIdField = '(' . $catTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'a.level';
+			}
+
+			if ($fieldsList[$key][0] == 'parent_id')
+			{
+				$parentIdField = 'a.parent_id';
+			}
+		}
+
 		// Let's get the id for the current item, either category or content item.
 		$jinput = JFactory::getApplication()->input;
 		// Load the category options for a given extension.
@@ -61,16 +88,14 @@ class JFormFieldCategoryEdit extends JFormFieldList
 			$extension = $this->element['extension'] ? (string) $this->element['extension'] : (string) $jinput->get('option', 'com_content');
 		}
 
-		$db = JFactory::getDbo();
-		$query = $db->getQuery(true)
-			->select('a.id AS value, a.title AS text, a.level, a.published')
+		$query->select('a.id AS value, a.title AS text, ' . $levelField . ', a.published')
 			->from('#__categories AS a')
 			->join('LEFT', $db->quoteName('#__categories') . ' AS b ON a.lft > b.lft AND a.rgt < b.rgt');
 
 		// Filter by the extension type
 		if ($this->element['parent'] == true || $jinput->get('option') == 'com_categories')
 		{
-			$query->where('(a.extension = ' . $db->quote($extension) . ' OR a.parent_id = 0)');
+			$query->where('(a.extension = ' . $db->quote($extension) . ' OR a.lft = 0)');
 		}
 		else
 		{
@@ -79,30 +104,13 @@ class JFormFieldCategoryEdit extends JFormFieldList
 		// If parent isn't explicitly stated but we are in com_categories assume we want parents
 		if ($oldCat != 0 && ($this->element['parent'] == true || $jinput->get('option') == 'com_categories'))
 		{
-			JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
-			$catTable = JTable::getInstance('Category', 'CategoriesTable');
-
-			$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $catTable->getTableName();
-			$db->setQuery($getTableFieldsQuery);
-			$fieldsList = $db->loadRowList();
-
-			$parentIdField = '(' . $catTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
-
-			foreach ($fieldsList as $key => $value)
-			{
-				if ($fieldsList[$key][0] == 'parent_id')
-				{
-					$parentIdField = 'a.parent_id';
-				}
-			}
-
 			// Prevent parenting to children of this item.
 			// To rearrange parents and children move the children up, not the parents down.
 			$query->join('LEFT', $db->quoteName('#__categories') . ' AS p ON p.id = ' . (int) $oldCat)
 				->where('NOT(a.lft >= p.lft AND a.rgt <= p.rgt)');
 
 			$rowQuery = $db->getQuery(true);
-			$rowQuery->select('a.id AS value, a.title AS text, a.level, ' . $parentIdField)
+			$rowQuery->select('a.id AS value, a.title AS text, ' . $levelField . ', ' . $parentIdField)
 				->from('#__categories AS a')
 				->where('a.id = ' . (int) $oldCat);
 			$db->setQuery($rowQuery);
@@ -140,7 +148,7 @@ class JFormFieldCategoryEdit extends JFormFieldList
 		}
 		catch (RuntimeException $e)
 		{
-			JError::raiseWarning(500, $e->getMessage());
+			JError::raiseWarning(500, $e->getMessage);
 		}
 
 		// Pad the option text with spaces using depth level as a multiplier.
@@ -175,7 +183,7 @@ class JFormFieldCategoryEdit extends JFormFieldList
 				// To take save or create in a category you need to have create rights for that category
 				// unless the item is already in that category.
 				// Unset the option if the user isn't authorised for it. In this field assets are always categories.
-				if ($user->authorise('core.create', $extension . '.category.' . $option->value) != true && $option->level != 0)
+				if ($user->authorise('core.create', $extension . '.category.' . $option->value) != true)
 				{
 					unset($options[$i]);
 				}

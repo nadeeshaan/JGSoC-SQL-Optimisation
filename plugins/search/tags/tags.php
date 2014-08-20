@@ -111,7 +111,10 @@ class PlgSearchTags extends JPlugin
 		$fieldsList = $db->loadRowList();
 
 		$parentIdField = '(' . $tagsTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
+		
 		$pathField = '(' . $tagsTable->getCorrelatedPathQuery('a.id') . ') AS path';
+		
+		$levelField = '(' . $tagsTable->getCorrelatedPathQuery('a.id') . ') AS level';
 
 		foreach ($fieldsList as $key => $value)
 		{
@@ -124,11 +127,16 @@ class PlgSearchTags extends JPlugin
 			{
 				$pathField = 'a.path';
 			}
+
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'a.level';
+			}
 		}
 
 		$query->select('a.id, a.title, a.alias, a.note, a.published, a.access' .
 			', a.checked_out, a.checked_out_time, a.created_user_id' .
-			', ' . $pathField . ', ' . $parentIdField . ', a.level, a.lft, a.rgt' .
+			', ' . $pathField . ', ' . $parentIdField . ', ' . $levelField . ', a.lft, a.rgt' .
 			', a.language, a.created_time AS created, a.note, a.description');
 
 		$case_when_item_alias = ' CASE WHEN ';
@@ -165,14 +173,13 @@ class PlgSearchTags extends JPlugin
 		if ($rows)
 		{
 			require_once JPATH_ROOT . '/components/com_tags/helpers/route.php';
-
 			foreach ($rows as $key => $row)
 			{
-				$rows[$key]->href       = TagsHelperRoute::getTagRoute($row->id);
-				$rows[$key]->text       = ($row->description != "" ? $row->description : $row->title);
-				$rows[$key]->text       .= $row->note;
-				$rows[$key]->section    = $section;
-				$rows[$key]->created    = $row->created;
+				$rows[$key]->href = TagsHelperRoute::getTagRoute($row->id);
+				$rows[$key]->text .= ($row->description != "" ? $row->description : $row->title);
+				$rows[$key]->text .= $row->note;
+				$rows[$key]->section = $section;
+				$rows[$key]->created = $row->created;
 				$rows[$key]->browsernav = 0;
 			}
 		}
@@ -195,7 +202,7 @@ class PlgSearchTags extends JPlugin
 
 				if ($tagged_items)
 				{
-					foreach ($tagged_items as $k => $item)
+					foreach($tagged_items as $k => $item)
 					{
 						$new_item = new stdClass;
 						$new_item->href = $item->link;

@@ -7,7 +7,7 @@
  * @license     GNU General Public License version 2 or later; see LICENSE.txt
  */
 
-defined('JPATH_PLATFORM') or die;
+defined('_JEXEC') or die;
 
 /**
  * JMenu class
@@ -41,6 +41,8 @@ class JMenuSite extends JMenu
 
 		$parentIdField = '(' . $menuTable->getCorrelatedParentIdQuery('m.lft', 'm.rgt') . ') AS parent_id';
 
+		$levelField = '(' . $menuTable->getCorrelatedLevelQuery('m.id') . ') AS level';
+
 		foreach ($fieldsList as $key => $value)
 		{
 			if ($fieldsList[$key][0] == 'path')
@@ -51,6 +53,11 @@ class JMenuSite extends JMenu
 			if ($fieldsList[$key][0] == 'parent_id')
 			{
 				$parentIdField = 'm.parent_id';
+			}
+
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'm.level';
 			}
 		}
 

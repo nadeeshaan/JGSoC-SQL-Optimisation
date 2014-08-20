@@ -41,6 +41,26 @@ class JFormFieldCategoryParent extends JFormFieldList
 		$options = array();
 		$name = (string) $this->element['name'];
 
+		$db = JFactory::getDbo();
+		$query = $db->getQuery(true);
+
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+		$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $catTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$levelField = '(' . $catTable->getCorrelatedLevelQuery('a.id') . ') AS level';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'a.level';
+			}
+		}
+
 		// Let's get the id for the current item, either category or content item.
 		$jinput = JFactory::getApplication()->input;
 		// For categories the old category is the category id 0 for new category.
@@ -54,9 +74,7 @@ class JFormFieldCategoryParent extends JFormFieldList
 			$oldCat = $this->form->getValue($name);
 		}
 
-		$db = JFactory::getDbo();
-		$query = $db->getQuery(true)
-			->select('a.id AS value, a.title AS text, a.level')
+		$query->select('a.id AS value, a.title AS text, ' . $levelField)
 			->from('#__categories AS a')
 			->join('LEFT', $db->quoteName('#__categories') . ' AS b ON a.lft > b.lft AND a.rgt < b.rgt');
 
@@ -74,7 +92,7 @@ class JFormFieldCategoryParent extends JFormFieldList
 					->where('NOT(a.lft >= p.lft AND a.rgt <= p.rgt)');
 
 				$rowQuery = $db->getQuery(true);
-				$rowQuery->select('a.id AS value, a.title AS text, a.level, a.parent_id')
+				$rowQuery->select('a.id AS value, a.title AS text, ' . $levelField . ', a.parent_id')
 					->from('#__categories AS a')
 					->where('a.id = ' . (int) $id);
 				$db->setQuery($rowQuery);
@@ -82,7 +100,7 @@ class JFormFieldCategoryParent extends JFormFieldList
 			}
 		}
 		$query->where('a.published IN (0,1)')
-			->group('a.id, a.title, a.level, a.lft, a.rgt, a.extension, a.parent_id')
+			->group('a.id')
 			->order('a.lft ASC');
 
 		// Get the options.
