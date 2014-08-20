@@ -7,7 +7,7 @@
  * @license     GNU General Public License version 2 or later; see LICENSE.txt
  */
 
-defined('JPATH_PLATFORM') or die;
+defined('_JEXEC') or die;
 
 /**
  * JMenu class
@@ -37,12 +37,19 @@ class JMenuSite extends JMenu
 		$db->setQuery($getTableFieldsQuery);
 		$fieldsList = $db->loadRowList();
 
+		$levelField = '(' . $menuTable->getCorrelatedLevelQuery('m.id') . ') AS level';
 		$pathField = '(' . $menuTable->getCorrelatedPathQuery('m.id') . ') AS route';
 
 		$parentIdField = '(' . $menuTable->getCorrelatedParentIdQuery('m.lft', 'm.rgt') . ') AS parent_id';
 
+
 		foreach ($fieldsList as $key => $value)
 		{
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'm.level';
+			}
+			
 			if ($fieldsList[$key][0] == 'path')
 			{
 				$pathField = 'm.path AS route';
@@ -52,10 +59,10 @@ class JMenuSite extends JMenu
 			{
 				$parentIdField = 'm.parent_id';
 			}
-		}
+		}		
 
-		$query->select('m.id, m.menutype, m.title, m.alias, m.note, ' . $pathField . ', m.link, m.type, m.level, m.language')
-			->select($db->quoteName('m.browserNav') . ', m.access, m.params, m.home, m.img, m.template_style_id, m.component_id, ' . $parentIdField)
+		$query->select('m.id, m.menutype, m.title, m.alias, m.note, ' . $pathField . ', m.link, m.type, ' . $levelField . ', m.language')
+			->select($db->quoteName('m.browserNav') . ', m.access, m.params, m.home, m.img, m.template_style_id, m.component_id, m.parent_id')
 			->select('e.element as component')
 			->from('#__menu AS m')
 			->join('LEFT', '#__extensions AS e ON m.component_id = e.extension_id')

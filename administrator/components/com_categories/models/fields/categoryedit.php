@@ -43,6 +43,26 @@ class JFormFieldCategoryEdit extends JFormFieldList
 		$published = $this->element['published'] ? $this->element['published'] : array(0, 1);
 		$name = (string) $this->element['name'];
 
+		$db = JFactory::getDbo();
+		$query = $db->getQuery(true);
+
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+		$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $catTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$levelField = '(' . $catTable->getCorrelatedLevelQuery('a.id') . ') AS level';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'a.level';
+			}
+		}
+
 		// Let's get the id for the current item, either category or content item.
 		$jinput = JFactory::getApplication()->input;
 		// Load the category options for a given extension.
@@ -61,16 +81,14 @@ class JFormFieldCategoryEdit extends JFormFieldList
 			$extension = $this->element['extension'] ? (string) $this->element['extension'] : (string) $jinput->get('option', 'com_content');
 		}
 
-		$db = JFactory::getDbo();
-		$query = $db->getQuery(true)
-			->select('a.id AS value, a.title AS text, a.level, a.published')
+		$query->select('a.id AS value, a.title AS text, ' . $levelField . ', a.published')
 			->from('#__categories AS a')
 			->join('LEFT', $db->quoteName('#__categories') . ' AS b ON a.lft > b.lft AND a.rgt < b.rgt');
 
 		// Filter by the extension type
 		if ($this->element['parent'] == true || $jinput->get('option') == 'com_categories')
 		{
-			$query->where('(a.extension = ' . $db->quote($extension) . ' OR a.parent_id = 0)');
+			$query->where('(a.extension = ' . $db->quote($extension) . ' OR a.lft = 0)');
 		}
 		else
 		{
@@ -102,7 +120,7 @@ class JFormFieldCategoryEdit extends JFormFieldList
 				->where('NOT(a.lft >= p.lft AND a.rgt <= p.rgt)');
 
 			$rowQuery = $db->getQuery(true);
-			$rowQuery->select('a.id AS value, a.title AS text, a.level, ' . $parentIdField)
+			$rowQuery->select('a.id AS value, a.title AS text, ' . $levelField . ', a.parent_id')
 				->from('#__categories AS a')
 				->where('a.id = ' . (int) $oldCat);
 			$db->setQuery($rowQuery);

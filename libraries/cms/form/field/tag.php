@@ -7,7 +7,7 @@
  * @license     GNU General Public License version 2 or later; see LICENSE.txt
  */
 
-defined('JPATH_PLATFORM') or die;
+defined('JPATH_BASE') or die;
 
 JFormHelper::loadFieldClass('list');
 
@@ -112,15 +112,25 @@ class JFormFieldTag extends JFormFieldList
 	 */
 	protected function getOptions()
 	{
-		$published = $this->element['published']? $this->element['published'] : array(0,1);
+		$db		= JFactory::getDbo();
+		$query	= $db->getQuery(true);
 
 		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_tags/tables');
-		$table = JTable::getInstance('Tag', 'TagsTable');
+		$tagsTable = JTable::getInstance('Tag', 'TagsTable');
 
-		$db		= JFactory::getDbo();
-
-		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $table->getTableName();
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $tagsTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
 		$fieldsList = $db->loadRowList();
+
+		$levelField = '(' . $tagsTable->getCorrelatedLevelQuery('a.id') . ') AS level';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'a.level';
+			}
+		}
 
 		$pathField = '(' . $table->getCorrelatedPathQuery('a.id') . ') AS path';
 
@@ -132,9 +142,9 @@ class JFormFieldTag extends JFormFieldList
 			}
 		}
 
-		$db		= JFactory::getDbo();
-		$query	= $db->getQuery(true)
-			->select('a.id AS value, ' . $pathField . ', a.title AS text, a.level, a.published')
+		$published = $this->element['published']? $this->element['published'] : array(0,1);
+
+		$query->select('a.id AS value, ' . $pathField . ', a.title AS text, ' . $levelField . ', a.published')
 			->from('#__tags AS a')
 			->join('LEFT', $db->quoteName('#__tags') . ' AS b ON a.lft > b.lft AND a.rgt < b.rgt');
 

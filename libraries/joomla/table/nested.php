@@ -1435,14 +1435,35 @@ class JTableNested extends JTable
 			}
 		}
 
+		$levelField = false;
+
+		// Get the set of table fields of the corresponding table
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $this->_tbl;
+		$this->_db->setQuery($getTableFieldsQuery);
+		$fieldsList = $this->_db->loadRowList();
+
+		// Check whether the table field se contains the path field if so $pathField is set to true
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = true;
+			}
+		}
+
 		// We've got the left value, and now that we've processed
 		// the children of this node we also know the right value.
 		$query->clear()
 			->update($this->_tbl)
 			->set('lft = ' . (int) $leftId)
-			->set('rgt = ' . (int) $rightId)
-			->set('level = ' . (int) $level)
-			->set('path = ' . $this->_db->quote($path))
+			->set('rgt = ' . (int) $rightId);
+
+		if ($levelField)
+		{
+			$query->set('level = ' . (int) $level);
+		}
+
+		$query->set('path = ' . $this->_db->quote($path))
 			->where($this->_tbl_key . ' = ' . (int) $parentId);
 		$this->_db->setQuery($query)->execute();
 
@@ -1611,6 +1632,8 @@ class JTableNested extends JTable
 				break;
 		}
 
+		// Set the levelField assuming not available in the table
+		$levelField = '(' . $this->getCorrelatedLevelQuery('a.id') . ') AS level';
 		$parentIdField = '(' . $this->getCorrelatedPathQuery('a.id') . ') AS path';
 
 		// Get the set of table fields of the corresponding table
@@ -1624,6 +1647,11 @@ class JTableNested extends JTable
 			if ($fieldsList[$key][0] == 'path')
 			{
 				$parentIdField = 'a.path';
+			}
+			
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'a.level';
 			}
 		}
 

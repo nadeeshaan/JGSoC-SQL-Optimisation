@@ -125,6 +125,7 @@ class TagsModelTags extends JModelList
 		$query = $db->getQuery(true);
 		$user = JFactory::getUser();
 
+		// Create a new tag table instance
 		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_tags/tables');
 		$tagsTable = JTable::getInstance('Tag', 'TagsTable');
 

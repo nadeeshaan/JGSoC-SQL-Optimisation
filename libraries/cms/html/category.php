@@ -7,7 +7,7 @@
  * @license     GNU General Public License version 2 or later; see LICENSE
  */
 
-defined('JPATH_PLATFORM') or die;
+defined('JPATH_BASE') or die;
 
 /**
  * Utility class for categories
@@ -41,14 +41,32 @@ abstract class JHtmlCategory
 	{
 		$hash = md5($extension . '.' . serialize($config));
 
+		$db = JFactory::getDbo();
+		$query = $db->getQuery(true);
+
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+		$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $catTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$levelField = '(' . $catTable->getCorrelatedLevelQuery('a.id') . ') AS level';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'a.level';
+			}
+		}
+
 		if (!isset(static::$items[$hash]))
 		{
 			$config = (array) $config;
-			$db = JFactory::getDbo();
-			$query = $db->getQuery(true)
-				->select('a.id, a.title, a.level')
+			$query->select('a.id, a.title, ' . $levelField)
 				->from('#__categories AS a')
-				->where('a.alias != "root"');
+				->where('a.parent_id > 0');
 
 			// Filter on extension.
 			$query->where('extension = ' . $db->quote($extension));
@@ -118,32 +136,32 @@ abstract class JHtmlCategory
 	{
 		$hash = md5($extension . '.' . serialize($config));
 
+		$db = JFactory::getDbo();
+		$query = $db->getQuery(true);
+
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+		$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
+		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $catTable->getTableName();
+		$db->setQuery($getTableFieldsQuery);
+		$fieldsList = $db->loadRowList();
+
+		$levelField = '(' . $catTable->getCorrelatedLevelQuery('a.id') . ') AS level';
+
+		foreach ($fieldsList as $key => $value)
+		{
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = 'a.level';
+			}
+		}
+
 		if (!isset(static::$items[$hash]))
 		{
-			$db = JFactory::getDbo();
-			$query = $db->getQuery(true);
-
-			JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
-			$catTable = JTable::getInstance('Category', 'CategoriesTable');
-
-			$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $catTable->getTableName();
-			$db->setQuery($getTableFieldsQuery);
-			$fieldsList = $db->loadRowList();
-
-			$parentIdField = '(' . $catTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
-
-			foreach ($fieldsList as $key => $value)
-			{
-				if ($fieldsList[$key][0] == 'parent_id')
-				{
-					$parentIdField = 'a.parent_id';
-				}
-			}
-
 			$config = (array) $config;
-			$query->select('a.id, a.title, a.level, ' . $parentIdField)
+			$query->select('a.id, a.title, ' . $levelField . ', a.parent_id')
 				->from('#__categories AS a')
-				->where('a.lft > 0');
+				->where('a.parent_id > 0');
 
 			// Filter on extension.
 			$query->where('extension = ' . $db->quote($extension));

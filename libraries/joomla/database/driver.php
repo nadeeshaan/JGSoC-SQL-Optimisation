@@ -969,9 +969,10 @@ abstract class JDatabaseDriver extends JDatabase implements JDatabaseInterface
 	{
 		$fields = array();
 		$values = array();
-
+	
 		// Set the levelField assuming not available in the table
 		$parentIdField = false;
+		$levelField = false;
 
 		// Get the set of table fields of the corresponding table
 		$getTableFieldsQuery = 'SHOW COLUMNS FROM ' . $table;
@@ -981,6 +982,11 @@ abstract class JDatabaseDriver extends JDatabase implements JDatabaseInterface
 		// Check whether the table field se contains the path field if so $pathField is set to true
 		foreach ($fieldsList as $key => $value)
 		{
+			if ($fieldsList[$key][0] == 'level')
+			{
+				$levelField = true;
+			}
+
 			if ($fieldsList[$key][0] == 'parent_id')
 			{
 				$parentIdField = true;
@@ -1002,10 +1008,10 @@ abstract class JDatabaseDriver extends JDatabase implements JDatabaseInterface
 				continue;
 			}
 
-			if (!$parentIdField)
+			if (!$levelField || !$parentIdField)
 			{
 				// Prepare and sanitize the fields and values for the database query.
-				if ($k != 'parent_id')
+				if ($k != 'level' || $k != 'parent_id')
 				{
 					$fields[] = $this->quoteName($k);
 					$values[] = $this->quote($v);

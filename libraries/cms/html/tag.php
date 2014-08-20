@@ -7,7 +7,7 @@
  * @license     GNU General Public License version 2 or later; see LICENSE
  */
 
-defined('JPATH_PLATFORM') or die;
+defined('JPATH_BASE') or die;
 
 /**
  * Utility class for tags
@@ -114,7 +114,6 @@ abstract class JHtmlTag
 		$hash = md5(serialize($config));
 		$config = (array) $config;
 		$db = JFactory::getDbo();
-		$query = $db->getQuery(true);
 
 		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_tags/tables');
 		$tagsTable = JTable::getInstance('Tag', 'TagsTable');
@@ -123,19 +122,20 @@ abstract class JHtmlTag
 		$db->setQuery($getTableFieldsQuery);
 		$fieldsList = $db->loadRowList();
 
-		$parentIdField = '(' . $tagsTable->getCorrelatedParentIdQuery('a.lft', 'a.rgt') . ') AS parent_id';
+		$levelField = '(' . $tagsTable->getCorrelatedLevelQuery('a.id') . ') AS level';
 
 		foreach ($fieldsList as $key => $value)
 		{
-			if ($fieldsList[$key][0] == 'parent_id')
+			if ($fieldsList[$key][0] == 'level')
 			{
-				$parentIdField = 'a.parent_id';
+				$levelField = 'a.level';
 			}
 		}
 
-		$query->select('a.id, a.title, a.level, ' . $parentIdField)
+		$query = $db->getQuery(true)
+			->select('a.id, a.title, ' . $levelField . ', a.parent_id')
 			->from('#__tags AS a')
-			->where('a.lft > 0');
+			->where('a.parent_id > 0');
 
 		// Filter on the published state
 		if (isset($config['filter.published']))
