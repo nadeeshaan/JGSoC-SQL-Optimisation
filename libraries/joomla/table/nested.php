@@ -1359,7 +1359,6 @@ class JTableNested extends JTable
 			->set('lft = ' . (int) $leftId)
 			->set('rgt = ' . (int) $rightId)
 			->set('level = ' . (int) $level)
-			->set('path = ' . $this->_db->quote($path))
 			->where($this->_tbl_key . ' = ' . (int) $parentId);
 		$this->_db->setQuery($query)->execute();
 
