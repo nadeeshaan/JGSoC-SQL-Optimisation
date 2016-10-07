@@ -173,6 +173,9 @@ class ContentModelArticles extends JModelList
 		// Get the current user for authorisation checks
 		$user	= JFactory::getUser();
 
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+		$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
 		// Create a new query object.
 		$db = $this->getDbo();
 		$query = $db->getQuery(true);
@@ -220,7 +223,8 @@ class ContentModelArticles extends JModelList
 		}
 
 		// Join over the categories.
-		$query->select('c.title AS category_title, c.path AS category_route, c.access AS category_access, c.alias AS category_alias')
+		$query->select('c.title AS category_title, (' . $catTable->getCorrelatedPathQuery('c.id') . ') AS category_route,' .
+			' c.access AS category_access, c.alias AS category_alias')
 			->join('LEFT', '#__categories AS c ON c.id = a.catid');
 
 		// Join over the users for the author and modified_by names.
@@ -231,7 +235,8 @@ class ContentModelArticles extends JModelList
 			->join('LEFT', '#__users AS uam ON uam.id = a.modified_by');
 
 		// Join over the categories to get parent category titles
-		$query->select('parent.title as parent_title, parent.id as parent_id, parent.path as parent_route, parent.alias as parent_alias')
+		$query->select('parent.title as parent_title, parent.id as parent_id,' .
+			' (' . $catTable->getCorrelatedPathQuery('c.id') . ') as parent_route, parent.alias as parent_alias')
 			->join('LEFT', '#__categories as parent ON parent.id = c.parent_id');
 
 		// Join on voting table
@@ -463,7 +468,7 @@ class ContentModelArticles extends JModelList
 				$endDateRange = $db->quote($this->getState('filter.end_date_range', $nullDate));
 				$query->where(
 					'(' . $dateField . ' >= ' . $startDateRange . ' AND ' . $dateField .
-						' <= ' . $endDateRange . ')'
+					' <= ' . $endDateRange . ')'
 				);
 				break;
 
@@ -471,7 +476,7 @@ class ContentModelArticles extends JModelList
 				$relativeDate = (int) $this->getState('filter.relative_date', 0);
 				$query->where(
 					$dateField . ' >= DATE_SUB(' . $nowDate . ', INTERVAL ' .
-						$relativeDate . ' DAY)'
+					$relativeDate . ' DAY)'
 				);
 				break;
 
@@ -495,7 +500,7 @@ class ContentModelArticles extends JModelList
 				case 'author':
 					$query->where(
 						'LOWER( CASE WHEN a.created_by_alias > ' . $db->quote(' ') .
-							' THEN a.created_by_alias ELSE ua.name END ) LIKE ' . $filter . ' '
+						' THEN a.created_by_alias ELSE ua.name END ) LIKE ' . $filter . ' '
 					);
 					break;
 

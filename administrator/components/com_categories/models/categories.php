@@ -147,13 +147,16 @@ class CategoriesModelCategories extends JModelList
 		$query = $db->getQuery(true);
 		$user = JFactory::getUser();
 
+		JTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_categories/tables');
+		$catTable = JTable::getInstance('Category', 'CategoriesTable');
+
 		// Select the required fields from the table.
 		$query->select(
 			$this->getState(
 				'list.select',
 				'a.id, a.title, a.alias, a.note, a.published, a.access' .
 				', a.checked_out, a.checked_out_time, a.created_user_id' .
-				', a.path, a.parent_id, a.level, a.lft, a.rgt' .
+				', (' . $catTable->getCorrelatedPathQuery('a.id') . ') AS path, a.parent_id, a.level, a.lft, a.rgt' .
 				', a.language'
 			)
 		);
